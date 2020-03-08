@@ -14,12 +14,18 @@ async def ping(ctx):
 @client.event
 async def on_member_join(member):
     logs = client.get_channel(639594402414854145)
-    await logs.send(f'**{member.name}#{member.discriminator}**\n**Member Joined**\n**Name:**{member.mention}({member.id})\n **Created On:**{member.created_at}\n{member.avatar_url_as(size=128)}')
+    embed=discord.Embed(title=f'**User Joined**', description=f"Name:{member.mention}({member.id})\nCreated on:{member.created_at}", color=0x008000)
+    embed.set_author(name=f'{member.name}#{member.discriminator}')
+    embed.set_thumbnail(url=member.avatar_url)
+    await logs.send(embed = embed)
 
 @client.event
 async def on_member_remove(member):
     logs = client.get_channel(639594402414854145)
-    await logs.send(f'**{member.name}#{member.discriminator}**\n**Member Left**\n**Name:**{member.mention}({member.id})\n **Created On:**{member.created_at}\n{member.avatar_url_as(size=128)}')
+    embed=discord.Embed(title=f'**User Left**', description=f"Name:{member.mention}({member.id})\nCreated on:{member.created_at}\nJoined on:{member.joined_at}", color=0xd90000)
+    embed.set_author(name=f'{member.name}#{member.discriminator}')
+    embed.set_thumbnail(url=member.avatar_url)
+    await logs.send(embed = embed)
 
 with open("token","r") as f:
     client.run(f.readline().strip())
