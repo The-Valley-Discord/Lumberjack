@@ -3,6 +3,7 @@ from datetime import datetime
 from discord.ext import commands
 
 client = commands.Bot(command_prefix = 'lum.')
+client.max_messages = 50000
 @client.event
 async def on_ready():
     print('Bot is ready.')
@@ -58,7 +59,7 @@ async def on_member_remove(member):
 #message delete event
 @client.event
 async def on_raw_message_delete(payload):
-    if {payload.cached_message.author.id} == client.user.id:
+    if payload.cached_message.author.bot:
         return
     else:
         logs = client.get_channel(686710645420589063)
