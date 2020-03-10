@@ -28,7 +28,8 @@ async def on_member_join(member):
         embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days + 1} days old", color=0x008000)
     embed.set_author(name=f'{member.name}#{member.discriminator}')
     embed.set_thumbnail(url=member.avatar_url)
-    embed.set_footer(text=f'Today at {current_time.strftime(format_time)}')
+    embed.set_footer(text=f'')
+    embed.timestamp = datetime.utcnow()
     await logs.send(embed = embed)
 
 #member leave event
@@ -44,7 +45,8 @@ async def on_member_remove(member):
     embed=discord.Embed(title=f'**User Left**', description=f"Name: {member.mention} ({member.id})\nCreated on: {account_created_date.strftime(format_date)}\nAccount age: {account_age.days + 1} days old\nJoined on: {account_join_date.strftime(format_date)} ({time_on_server.days + 1} days ago)", color=0xd90000)
     embed.set_author(name=f'{member.name}#{member.discriminator}')
     embed.set_thumbnail(url=member.avatar_url)
-    embed.set_footer(text=f'Today at {current_time.strftime(format_time)}')
+    embed.set_footer(text=f'')
+    embed.timestamp = datetime.utcnow()
     roles = [f'<@&{role.id}>' for role in member.roles[1:]]
     roles_str = " ".join(roles)
     if len(roles) <= 1:
@@ -64,13 +66,14 @@ async def on_raw_message_delete(payload):
         attachments = [f"{attachment.proxy_url}" for attachment in payload.cached_message.attachments]
         attachments_str = " ".join(attachments)
         if len(attachments) == 0:
-            embed=discord.Embed(title=F"**Message sent by {payload.cached_message.author.name}#{payload.cached_message.author.discriminator} deleted in {payload.cached_message.channel}**", description=F"Author: <@!{payload.cached_message.author.id}> ({payload.cached_message.author.id})\nChannel: <#{payload.channel_id}> ({payload.channel_id})\nMessage ID: {payload.message_id}\n**Content**\n\n {payload.cached_message.content}\n\nAttachments: None", url=payload.cached_message.jump_url)
+            embed=discord.Embed(title=F"**Message deleted in #{payload.cached_message.channel}**", description=F"**Author:** <@!{payload.cached_message.author.id}>\n**Channel:** <#{payload.channel_id}> ({payload.channel_id})\n**Message ID:** {payload.message_id}\n\n**Content**\n\n {payload.cached_message.content}\n\n**Attachments:** None", url=payload.cached_message.jump_url)
         else:
-            embed=discord.Embed(title=F"**Message sent by {payload.cached_message.author.name}#{payload.cached_message.author.discriminator} deleted in {payload.cached_message.channel}**", description=F"Author: <@!{payload.cached_message.author.id}> ({payload.cached_message.author.id})\nChannel: <#{payload.channel_id}> ({payload.channel_id})\nMessage ID: {payload.message_id}\n**Content**\n\n {payload.cached_message.content}\n\nAttachments:{attachments_str}", url=payload.cached_message.jump_url)
-            embed.set_image(url=attachments_str)
-
-            embed.set_thumbnail(url=payload.cached_message.author.avatar_url)
-            embed.set_footer(text=f'Today at {current_time.strftime(format_time)}')
+            embed=discord.Embed(title=F"**Message deleted in #{payload.cached_message.channel}**", description=F"**Author:** <@!{payload.cached_message.author.id}>\n**Channel:** <#{payload.channel_id}> ({payload.channel_id})\n**Message ID:** {payload.message_id}\n\n**Content**\n\n {payload.cached_message.content}\n\n**Attachments:** {attachments_str}", url=payload.cached_message.jump_url)
+            embed.set_image(url=attachments[0])
+        embed.set_author(name=f'{payload.cached_message.author.name}#{payload.cached_message.author.discriminator} ({payload.cached_message.author.id})')
+        embed.set_thumbnail(url=payload.cached_message.author.avatar_url)
+        embed.set_footer(text=f'')
+        embed.timestamp = datetime.utcnow()
         await logs.send(embed=embed)
 
 
