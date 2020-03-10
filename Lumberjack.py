@@ -15,6 +15,8 @@ format_date = '%b %d, %Y'
 format_time = '%I:%M %p'
 format_datetime = '%b %d, %Y  %I:%M %p'
 
+#member join event
+
 @client.event
 async def on_member_join(member):
     logs = client.get_channel(686365631217533153)
@@ -28,6 +30,8 @@ async def on_member_join(member):
     embed.set_thumbnail(url=member.avatar_url)
     embed.set_footer(text=f'Today at {current_time.strftime(format_time)}')
     await logs.send(embed = embed)
+
+#member leave event
 
 @client.event
 async def on_member_remove(member):
@@ -48,6 +52,31 @@ async def on_member_remove(member):
     else:
         embed.add_field(name=f'**Roles[{len(roles)}]**', value=f'{roles_str}', inline=False)
     await logs.send(embed = embed)
+
+#message delete event
+@client.event
+async def on_raw_message_delete(payload):
+    if {payload.cached_message.author.id} == client.user.id:
+        return
+    else:
+        logs = client.get_channel(686710645420589063)
+        current_time = datetime.now()
+        attachments = [f"{attachment.proxy_url}" for attachment in payload.cached_message.attachments]
+        attachments_str = " ".join(attachments)
+        if len(attachments) == 0:
+            embed=discord.Embed(title=F"**Message sent by {payload.cached_message.author.name}#{payload.cached_message.author.discriminator} deleted in {payload.cached_message.channel}**", description=F"Author: <@!{payload.cached_message.author.id}> ({payload.cached_message.author.id})\nChannel: <#{payload.channel_id}> ({payload.channel_id})\nMessage ID: {payload.message_id}\n**Content**\n\n {payload.cached_message.content}\n\nAttachments: None", url=payload.cached_message.jump_url)
+        else:
+            embed=discord.Embed(title=F"**Message sent by {payload.cached_message.author.name}#{payload.cached_message.author.discriminator} deleted in {payload.cached_message.channel}**", description=F"Author: <@!{payload.cached_message.author.id}> ({payload.cached_message.author.id})\nChannel: <#{payload.channel_id}> ({payload.channel_id})\nMessage ID: {payload.message_id}\n**Content**\n\n {payload.cached_message.content}\n\nAttachments:{attachments_str}", url=payload.cached_message.jump_url)
+            embed.set_image(url=attachments_str)
+
+            embed.set_thumbnail(url=payload.cached_message.author.avatar_url)
+            embed.set_footer(text=f'Today at {current_time.strftime(format_time)}')
+        await logs.send(embed=embed)
+
+
+
+
+
 
 with open("token","r") as f:
     client.run(f.readline().strip())
