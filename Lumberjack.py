@@ -24,10 +24,12 @@ format_datetime = '%b %d, %Y  %I:%M %p'
 async def on_member_join(member):
     logs = client.get_channel(686365631217533153)
     account_age = datetime.utcnow() - member.created_at
-    if (account_age.days) == 0:
+    if (account_age.seconds//3600) == 0:
+        embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old\n\n**New Account**\nCreated {(account_age.seconds%3600)//60} minutes {((account_age.seconds%3600)%60)} seconds" , color=0xffc704)
+    elif 0 < (account_age.seconds//3600) and (account_age.days) == 0:
         embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old\n\n**New Account**\nCreated {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes {((account_age.seconds%3600)%60)} seconds" , color=0xffc704)
-    elif 0 < (account_age.days + 1) < 7:
-        embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old\n\n**New Account**\nCreated {account_age.days +1} days {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes {((account_age.seconds%3600)%60)} seconds" , color=0xffc704)
+    elif 0 < (account_age.days) < 7:
+        embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old\n\n**New Account**\nCreated {account_age.days +1} days {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes" , color=0xffc704)
     else:
         embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old", color=0x008000)
     embed.set_author(name=f'{member.name}#{member.discriminator}')
