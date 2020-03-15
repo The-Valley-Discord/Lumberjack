@@ -30,7 +30,7 @@ async def on_member_join(member):
     elif 0 < (account_age.seconds//3600) and account_age.days == 0:
         embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old\n\n**New Account**\nCreated {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes {((account_age.seconds%3600)%60)} seconds" , color=0xffc704)
     elif 0 < account_age.days < 7:
-        embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old\n\n**New Account**\nCreated {account_age.days +1} days {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes" , color=0xffc704)
+        embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old\n\n**New Account**\nCreated {account_age.days} days {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes" , color=0xffc704)
     else:
         embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old", color=0x008000)
     embed.set_author(name=f'{member.name}#{member.discriminator}')
@@ -60,13 +60,13 @@ async def on_member_remove(member):
     await logs.send(embed = embed)
 
 #message delete event
+
 @client.event
 async def on_raw_message_delete(payload):
     if payload.cached_message.author.bot:
         return
     else:
         logs = client.get_channel(686710645420589063)
-        current_time = datetime.now()
         attachments = [f"{attachment.proxy_url}" for attachment in payload.cached_message.attachments]
         attachments_str = " ".join(attachments)
         if len(attachments) == 0:
@@ -80,9 +80,57 @@ async def on_raw_message_delete(payload):
         embed.timestamp = datetime.utcnow()
         await logs.send(embed=embed)
 
+#message edit event
 
+@client.event
+async def on_message_edit(before, after):
+    if after.author.bot:
+        return
+    else:
+        logs = client.get_channel(688775096730648646)
+        embed=discord.Embed(title=F"**Message edited in #{after.channel}**", description=F"**Author:** <@!{after.author.id}>\n**Channel:** <#{after.channel.id}> ({after.channel.id})\n**Message ID:** {after.id}\n\n**Before**\n\n {before.content}\n\n**After**\n\n{after.content}", url=after.jump_url)
+        embed.set_author(name=f'{after.author.name}#{after.author.discriminator} ({after.author.id})')
+        embed.set_thumbnail(url=after.author.avatar_url)
+        embed.set_footer(text=f'')
+        embed.timestamp = datetime.utcnow()
+        await logs.send(embed=embed)
 
+#member update event (nickname, roles, activity, status)
 
+@client.event
+async def on_member_update(before, after):
+    if before.nick == after.nick:
+        return
+    else:
+        logs = client.get_channel(688782849926889503)
+        embed=discord.Embed(title=F"**User Nickname Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.nick}\n**After:** {after.nick}")
+        embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
+        embed.set_thumbnail(url=after.avatar_url)
+        embed.set_footer(text=f'')
+        embed.timestamp = datetime.utcnow()
+        await logs.send(embed=embed)
+
+#user update event (avatar, username, discriminator)
+
+@client.event
+async def on_user_update(before, after):
+    if before.name != after.name or before.discriminator != after.discriminator:
+        logs = client.get_channel(688782849926889503)
+        embed=discord.Embed(title=F"**Username Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.name}#{before.discriminator}\n**After:** {after.name}#{after.discriminator}")
+        embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
+        embed.set_thumbnail(url=after.avatar_url)
+        embed.set_footer(text=f'')
+        embed.timestamp = datetime.utcnow()
+        await logs.send(embed=embed)
+    if before.avatar != after.avatar:
+        logs = client.get_channel(688794900577517615)
+        embed=discord.Embed(title=F"**User avatar Updated**", description=F"**User:** <@!{after.id}>\n\nOld avatar in thumbail. New avatar down below")
+        embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
+        embed.set_thumbnail(url=before.avatar_url)
+        embed.set_footer(text=f'')
+        embed.set_image(url=after.avatar_url)
+        embed.timestamp = datetime.utcnow()
+        await logs.send(embed=embed)
 
 
 with open("token","r") as f:
