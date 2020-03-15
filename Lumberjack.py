@@ -1,13 +1,33 @@
 import discord
 from datetime import datetime
 from discord.ext import commands
+import logging
 
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
 client = commands.Bot(command_prefix = 'lum.')
-client.max_messages = 50000
+client.max_messages = 500000
+
+
+before_invites = []
+
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the forest."))
+    for guild in client.guilds:
+        for invite in await guild.invites():
+            x = [invite.code, invite.uses]
+            before_invites.append(x)
     print('Bot is ready.')
+
+@client.event
+async def on_invite_create(invite):
+    logs = client.get_channel(686365631217533153)
+    x = [invite.code, invite.uses]
+    before_invites.append(x)
 
 @client.command()
 async def ping(ctx):
@@ -25,14 +45,28 @@ format_datetime = '%b %d, %Y  %I:%M %p'
 async def on_member_join(member):
     logs = client.get_channel(686365631217533153)
     account_age = datetime.utcnow() - member.created_at
+    after_invites = []
+    invite_codes = []
+    invite_used = ''
+    for guild in client.guilds:
+        for invite in await guild.invites():
+            x = [invite.code, invite.uses]
+            after_invites.append(x)
+    for before_invite in before_invites:
+        for after_invite in after_invites:
+            if before_invite == after_invite:
+                pass
+            elif before_invite[0] == after_invite[0] and before_invite[1] != after_invite[1]:
+                before_invite[1] += 1
+                invite_used = before_invite[0]
     if (account_age.seconds//3600) == 0 and account_age.days == 0:
-        embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old\n\n**New Account**\nCreated {(account_age.seconds%3600)//60} minutes {((account_age.seconds%3600)%60)} seconds" , color=0xffc704)
+        embed=discord.Embed(title=f'**User Joined**', description=f"**Name:** {member.mention} ({member.id})\n**Created on:** {member.created_at.strftime(format_date)}\n**Account age:** {account_age.days} days old\n**Invite used:** discord.gg/{invite_used}\n\n**New Account**\nCreated {(account_age.seconds%3600)//60} minutes {((account_age.seconds%3600)%60)} seconds" , color=0xffc704)
     elif 0 < (account_age.seconds//3600) and account_age.days == 0:
-        embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old\n\n**New Account**\nCreated {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes {((account_age.seconds%3600)%60)} seconds" , color=0xffc704)
+        embed=discord.Embed(title=f'**User Joined**', description=f"**Name:** {member.mention} ({member.id})\n**Created on:** {member.created_at.strftime(format_date)}\n**Account age:** {account_age.days} days old\n**Invite used:** discord.gg/{invite_used}\n\n**New Account**\nCreated {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes {((account_age.seconds%3600)%60)} seconds" , color=0xffc704)
     elif 0 < account_age.days < 7:
-        embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old\n\n**New Account**\nCreated {account_age.days} days {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes" , color=0xffc704)
+        embed=discord.Embed(title=f'**User Joined**', description=f"**Name:** {member.mention} ({member.id})\n**Created on:** {member.created_at.strftime(format_date)}\n**Account age:** {account_age.days} days old\n**Invite used:** discord.gg/{invite_used}\n\n**New Account**\nCreated {account_age.days} days {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes" , color=0xffc704)
     else:
-        embed=discord.Embed(title=f'**User Joined**', description=f"Name: {member.mention} ({member.id})\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old", color=0x008000)
+        embed=discord.Embed(title=f'**User Joined**', description=f"**Name:** {member.mention} ({member.id})\n**Created on:** {member.created_at.strftime(format_date)}\n**Account age:** {account_age.days} days old\n**Invite used:** discord.gg/{invite_used}", color=0x008000)
     embed.set_author(name=f'{member.name}#{member.discriminator}')
     embed.set_thumbnail(url=member.avatar_url)
     embed.set_footer(text=f'Total Members: {member.guild.member_count}')
@@ -131,6 +165,11 @@ async def on_user_update(before, after):
         embed.set_image(url=after.avatar_url)
         embed.timestamp = datetime.utcnow()
         await logs.send(embed=embed)
+
+@client.command()
+async def guild_inv(ctx):
+
+    await ctx.send(f'{before_invites}')
 
 
 with open("token","r") as f:
