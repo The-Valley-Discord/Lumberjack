@@ -46,7 +46,6 @@ async def on_member_join(member):
     logs = client.get_channel(686365631217533153)
     account_age = datetime.utcnow() - member.created_at
     after_invites = []
-    invite_codes = []
     invite_used = ''
     for guild in client.guilds:
         for invite in await guild.invites():
