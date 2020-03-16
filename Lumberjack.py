@@ -14,7 +14,7 @@ before_invites = []
 
 @client.event
 async def on_ready():
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="the forest."))
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="with ten thousand eyes."))
     for guild in client.guilds:
         for invite in await guild.invites():
             x = [invite.code, invite.uses]
@@ -83,7 +83,7 @@ async def on_member_remove(member):
     embed.timestamp = datetime.utcnow()
     roles = [f'<@&{role.id}>' for role in member.roles[1:]]
     roles_str = " ".join(roles)
-    if len(roles) <= 1:
+    if len(roles) < 1:
         embed.add_field(name=f'**Roles[{len(roles)}]**', value="None", inline=False)
     else:
         embed.add_field(name=f'**Roles[{len(roles)}]**', value=f'{roles_str}', inline=False)
@@ -94,7 +94,7 @@ async def on_member_remove(member):
 @client.event
 async def on_raw_message_delete(payload):
     if payload.cached_message.author.bot:
-        return
+        pass
     else:
         logs = client.get_channel(688877196487819268)
         attachments = [f"{attachment.proxy_url}" for attachment in payload.cached_message.attachments]
@@ -119,7 +119,9 @@ async def on_raw_message_delete(payload):
 @client.event
 async def on_message_edit(before, after):
     if after.author.bot:
-        return
+        pass
+    elif before.content == after.content:
+        pass
     else:
         logs = client.get_channel(688877153843937324)
         embed=discord.Embed(title=F"**Message edited in #{after.channel}**", description=F"**Author:** <@!{after.author.id}>\n**Channel:** <#{after.channel.id}> ({after.channel.id})\n**Message ID:** {after.id}", color=0xffc704)
@@ -136,7 +138,7 @@ async def on_message_edit(before, after):
 @client.event
 async def on_member_update(before, after):
     if before.nick == after.nick:
-        return
+        pass
     else:
         logs = client.get_channel(688877297889312786)
         embed=discord.Embed(title=F"**User Nickname Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.nick}\n**After:** {after.nick}", color=0x22ffc2)
@@ -159,7 +161,7 @@ async def on_user_update(before, after):
         embed.timestamp = datetime.utcnow()
         await logs.send(embed=embed)
     if before.avatar != after.avatar:
-        logs = client.get_channel(688877344969981961)
+        logs = client.get_channel(688877297889312786)
         embed=discord.Embed(title=F"**User avatar Updated**", description=F"**User:** <@!{after.id}>\n\nOld avatar in thumbail. New avatar down below", color=0x8000ff)
         embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
         embed.set_thumbnail(url=before.avatar_url)
@@ -169,7 +171,7 @@ async def on_user_update(before, after):
         await logs.send(embed=embed)
 @client.event
 async def on_bulk_message_delete(messages):
-    logs = client.get_channel(688877252322394306)
+    logs = client.get_channel(688877196487819268)
     message = messages[0]
     current_time = datetime.utcnow()
     purged_channel = message.channel.mention
@@ -182,7 +184,7 @@ async def on_bulk_message_delete(messages):
         await logs.send(embed=embed)
         await logs.send(file=discord.File('./log.txt', filename=f'{current_time.strftime(format_datetime)}.txt'))
     except discord.HTTPException:
-        return
+        pass
 
 with open("token","r") as f:
     client.run(f.readline().strip())
