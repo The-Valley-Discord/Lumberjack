@@ -9,8 +9,7 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(me
 logger.addHandler(handler)
 client = commands.Bot(command_prefix = 'lum.')
 client.max_messages = 500000
-
-
+client.fetch_offline_members = True
 before_invites = []
 
 @client.event
@@ -63,7 +62,7 @@ async def on_member_join(member):
     elif 0 < account_age.days < 7:
         embed=discord.Embed(title=f'**User Joined**', description=f"**Name:** {member.mention}\n**Created on:** {member.created_at.strftime(format_date)}\n**Account age:** {account_age.days} days old\n**Invite used:** discord.gg/{invite_used}\n\n**New Account**\nCreated {account_age.days} days {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes" , color=0xffc704)
     else:
-        embed=discord.Embed(title=f'**User Joined**', description=f"**Name:** {member.mention})\n**Created on:** {member.created_at.strftime(format_date)}\n**Account age:** {account_age.days} days old\n**Invite used:** discord.gg/{invite_used}", color=0x008000)
+        embed=discord.Embed(title=f'**User Joined**', description=f"**Name:** {member.mention}\n**Created on:** {member.created_at.strftime(format_date)}\n**Account age:** {account_age.days} days old\n**Invite used:** discord.gg/{invite_used}", color=0x008000)
     embed.set_author(name=f'{member.name}#{member.discriminator} ({member.id})')
     embed.set_thumbnail(url=member.avatar_url)
     embed.set_footer(text=f'Total Members: {member.guild.member_count}')
@@ -101,10 +100,14 @@ async def on_raw_message_delete(payload):
         attachments = [f"{attachment.proxy_url}" for attachment in payload.cached_message.attachments]
         attachments_str = " ".join(attachments)
         if len(attachments) == 0:
-            embed=discord.Embed(title=F"**Message deleted in #{payload.cached_message.channel}**", description=F"**Author:** <@!{payload.cached_message.author.id}>\n**Channel:** <#{payload.channel_id}> ({payload.channel_id})\n**Message ID:** {payload.message_id}\n\n**Content**\n\n {payload.cached_message.content}\n\n**Attachments:** None")
+            embed=discord.Embed(title=F"**Message deleted in #{payload.cached_message.channel}**", description=F"**Author:** <@!{payload.cached_message.author.id}>\n**Channel:** <#{payload.channel_id}> ({payload.channel_id})\n**Message ID:** {payload.message_id}", color=0xd90000)
+            embed.add_field(name=f'**Content**', value=f'{payload.cached_message.content}', inline=False)
+            embed.add_field(name=f'**Attachments**', value=f'None', inline=False)
         else:
-            embed=discord.Embed(title=F"**Message deleted in #{payload.cached_message.channel}**", description=F"**Author:** <@!{payload.cached_message.author.id}>\n**Channel:** <#{payload.channel_id}> ({payload.channel_id})\n**Message ID:** {payload.message_id}\n\n**Content**\n\n {payload.cached_message.content}\n\n**Attachments:** {attachments_str}")
+            embed=discord.Embed(title=F"**Message deleted in #{payload.cached_message.channel}**", description=F"**Author:** <@!{payload.cached_message.author.id}>\n**Channel:** <#{payload.channel_id}> ({payload.channel_id})\n**Message ID:** {payload.message_id}", color=0xd90000)
             embed.set_image(url=attachments[0])
+            embed.add_field(name=f'**Content**', value=f'{payload.cached_message.content}', inline=False)
+            embed.add_field(name=f'**Attachments**', value=f'{attachments_str}', inline=False)
         embed.set_author(name=f'{payload.cached_message.author.name}#{payload.cached_message.author.discriminator} ({payload.cached_message.author.id})')
         embed.set_thumbnail(url=payload.cached_message.author.avatar_url)
         embed.set_footer(text=f'')
@@ -119,8 +122,10 @@ async def on_message_edit(before, after):
         return
     else:
         logs = client.get_channel(688877153843937324)
-        embed=discord.Embed(title=F"**Message edited in #{after.channel}**", description=F"**Author:** <@!{after.author.id}>\n**Channel:** <#{after.channel.id}> ({after.channel.id})\n**Message ID:** {after.id}\n\n**Before**\n\n {before.content}\n\n**After**\n\n{after.content}")
+        embed=discord.Embed(title=F"**Message edited in #{after.channel}**", description=F"**Author:** <@!{after.author.id}>\n**Channel:** <#{after.channel.id}> ({after.channel.id})\n**Message ID:** {after.id}", color=0xffc704)
         embed.set_author(name=f'{after.author.name}#{after.author.discriminator} ({after.author.id})')
+        embed.add_field(name=f'**Before**', value=f'{before.content}', inline=False)
+        embed.add_field(name=f'**After**', value=f'{after.content}', inline=False)
         embed.set_thumbnail(url=after.author.avatar_url)
         embed.set_footer(text=f'')
         embed.timestamp = datetime.utcnow()
@@ -134,7 +139,7 @@ async def on_member_update(before, after):
         return
     else:
         logs = client.get_channel(688877297889312786)
-        embed=discord.Embed(title=F"**User Nickname Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.nick}\n**After:** {after.nick}")
+        embed=discord.Embed(title=F"**User Nickname Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.nick}\n**After:** {after.nick}", color=0x22ffc2)
         embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
         embed.set_thumbnail(url=after.avatar_url)
         embed.set_footer(text=f'')
@@ -147,7 +152,7 @@ async def on_member_update(before, after):
 async def on_user_update(before, after):
     if before.name != after.name or before.discriminator != after.discriminator:
         logs = client.get_channel(688877297889312786)
-        embed=discord.Embed(title=F"**Username Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.name}#{before.discriminator}\n**After:** {after.name}#{after.discriminator}")
+        embed=discord.Embed(title=F"**Username Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.name}#{before.discriminator}\n**After:** {after.name}#{after.discriminator}", color=0x22ffc2)
         embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
         embed.set_thumbnail(url=after.avatar_url)
         embed.set_footer(text=f'')
@@ -155,7 +160,7 @@ async def on_user_update(before, after):
         await logs.send(embed=embed)
     if before.avatar != after.avatar:
         logs = client.get_channel(688877344969981961)
-        embed=discord.Embed(title=F"**User avatar Updated**", description=F"**User:** <@!{after.id}>\n\nOld avatar in thumbail. New avatar down below")
+        embed=discord.Embed(title=F"**User avatar Updated**", description=F"**User:** <@!{after.id}>\n\nOld avatar in thumbail. New avatar down below", color=0x8000ff)
         embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
         embed.set_thumbnail(url=before.avatar_url)
         embed.set_footer(text=f'')
@@ -168,7 +173,7 @@ async def on_bulk_message_delete(messages):
     message = messages[0]
     current_time = datetime.utcnow()
     purged_channel = message.channel.mention
-    embed=discord.Embed(title=F"**Bulk Message Delete**", description=F"**Message Count:** {len(messages)}\n**Channel:** {purged_channel}\n Full message dump attached below.")
+    embed=discord.Embed(title=F"**Bulk Message Delete**", description=F"**Message Count:** {len(messages)}\n**Channel:** {purged_channel}\n Full message dump attached below.", color=0xff0080)
     embed.timestamp = datetime.utcnow()
     with open('./log.txt', 'w') as file:
         for message in messages:
