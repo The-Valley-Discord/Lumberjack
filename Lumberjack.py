@@ -14,6 +14,12 @@ gl = pd.read_csv('Log Channel IDs.csv')
 async def on_ready():
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="with ten thousand eyes."))
     for guild in client.guilds:
+        global gl
+        if guild.id in gl['Guild ID']:
+            pass
+        else:
+            gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0], index = gl.columns), ignore_index=True)
+            gl.to_csv('Log Channel IDs.csv', index=False)
         for invite in await guild.invites():
             x = [invite.url, invite.uses, invite.inviter]
             before_invites.append(x)
@@ -24,6 +30,84 @@ async def on_guild_join(guild):
     for invite in await guild.invites():
         x = [invite.url, invite.uses, invite.inviter]
         before_invites.append(x)
+    if guild.id in gl['Guild ID']:
+        pass
+    else:
+        gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0], index = gl.columns), ignore_index=True)
+        gl.to_csv('Log Channel IDs.csv', index=False)
+
+@client.command()
+async def log(ctx, *, log_type):
+    rows = list(gl['Guild ID'][gl['Guild ID'] == ctx.guild.id].index)
+    log_type_scrub = log_type.lower()
+    log_type_split = log_type_scrub.split()
+    log_name = ''
+    if log_type_split[0] == 'join':
+        gl.iloc[rows, 1] = ctx.channel.id
+        log_name = 'Join'
+    elif log_type_split[0] == 'leave':
+        gl.iloc[rows, 2] = ctx.channel.id
+        log_name = 'Leave'
+    elif log_type_split[0] == 'delete':
+        gl.iloc[rows, 3] = ctx.channel.id
+        log_name = 'Delete'
+    elif log_type_split[0] == 'bulk_delete':
+        gl.iloc[rows, 4] = ctx.channel.id
+        log_name = 'Bulk Delete'
+    elif log_type_split[0] == 'edit':
+        gl.iloc[rows, 5] = ctx.channel.id
+        log_name = 'Edit'
+    elif log_type_split[0] == 'username':
+        gl.iloc[rows, 6] = ctx.channel.id
+        log_name = 'Username'
+    elif log_type_split[0] == 'nickname':
+        gl.iloc[rows, 7] = ctx.channel.id
+        log_name = 'Nickname'
+    elif log_type_split[0] == 'avatar':
+        gl.iloc[rows, 8] = ctx.channel.id
+        log_name = 'Avatar'
+    if len(log_name) == 0:
+        await ctx.send(f'Incorrect log type. Please use one of the folowing. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, or Avatar')
+    else:
+        await ctx.send(f'Updated {log_name} Log Channel to {ctx.channel.mention}')
+        gl.to_csv('Log Channel IDs.csv', index=False)
+@client.command()
+async def clear(ctx, *, log_type):
+    rows = list(gl['Guild ID'][gl['Guild ID'] == ctx.guild.id].index)
+    log_type_scrub = log_type.lower()
+    log_type_split = log_type_scrub.split()
+    log_name = ''
+    if log_type_split[0] == 'join':
+        gl.iloc[rows, 1] = 0
+        log_name = 'Join'
+    elif log_type_split[0] == 'leave':
+        gl.iloc[rows, 2] = 0
+        log_name = 'Leave'
+    elif log_type_split[0] == 'delete':
+        gl.iloc[rows, 3] = 0
+        log_name = 'Delete'
+    elif log_type_split[0] == 'bulk_delete':
+        gl.iloc[rows, 4] = 0
+        log_name = 'Bulk Delete'
+    elif log_type_split[0] == 'edit':
+        gl.iloc[rows, 5] = 0
+        log_name = 'Edit'
+    elif log_type_split[0] == 'username':
+        gl.iloc[rows, 6] = 0
+        log_name = 'Username'
+    elif log_type_split[0] == 'nickname':
+        gl.iloc[rows, 7] = 0
+        log_name = 'Nickname'
+    elif log_type_split[0] == 'avatar':
+        gl.iloc[rows, 8] = 0
+        log_name = 'Avatar'
+    if len(log_name) == 0:
+        await ctx.send(f'Incorrect log type. Please use one of the folowing. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, or Avatar')
+    else:
+        await ctx.send(f'Disabled {log_name} logs.')
+        gl.to_csv('Log Channel IDs.csv', index=False)
+
+
 
 @client.event
 async def on_guild_remove(guild):
@@ -131,11 +215,11 @@ async def on_message_delete(message):
         attachments = [f"{attachment.proxy_url}" for attachment in message.attachments]
         attachments_str = " ".join(attachments)
         if len(attachments) == 0:
-            embed=discord.Embed(title=F"**Message deleted in #{message.channel}**", description=F"**Author:** <@!{message.author.id}>\n**Channel:** <#{message.channel.id}> ({message.channel.id})\n**Message ID:** {message.id}", color=0xd90000)
+            embed=discord.Embed(title=F"**Message deleted in #{message.channel}**", description=F"**Author:** {message.author.mention}\n**Channel:** <#{message.channel.id}> ({message.channel.id})\n**Message ID:** {message.id}", color=0xd90000)
             embed.add_field(name=f'**Content**', value=f'{message.content}', inline=False)
             embed.add_field(name=f'**Attachments**', value=f'None', inline=False)
         else:
-            embed=discord.Embed(title=F"**Message deleted in #{message.channel}**", description=F"**Author:** <@!{message.author.id}>\n**Channel:** <#{message.channel.id}> ({message.channel.id})\n**Message ID:** {message.id}", color=0xd90000)
+            embed=discord.Embed(title=F"**Message deleted in #{message.channel}**", description=F"**Author:** {message.author.mention}\n**Channel:** <#{message.channel.id}> ({message.channel.id})\n**Message ID:** {message.id}", color=0xd90000)
             embed.set_image(url=attachments[0])
             if len(message.content) == 0:
                 embed.add_field(name=f'**Content**', value=f'`Blank`', inline=True)
