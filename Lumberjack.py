@@ -15,11 +15,12 @@ async def on_ready():
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="with ten thousand eyes."))
     for guild in client.guilds:
         global gl
-        if guild.id in gl['Guild ID']:
-            pass
-        else:
+        g_id = gl.loc[gl['Guild ID'] == guild.id]
+        if g_id.empty:
             gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0], index = gl.columns), ignore_index=True)
             gl.to_csv('Log Channel IDs.csv', index=False)
+        else:
+            pass
         for invite in await guild.invites():
             x = [invite.url, invite.uses, invite.inviter]
             before_invites.append(x)
@@ -30,11 +31,13 @@ async def on_guild_join(guild):
     for invite in await guild.invites():
         x = [invite.url, invite.uses, invite.inviter]
         before_invites.append(x)
-    if guild.id in gl['Guild ID']:
-        pass
-    else:
-        gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0], index = gl.columns), ignore_index=True)
-        gl.to_csv('Log Channel IDs.csv', index=False)
+        global gl
+        g_id = gl.loc[gl['Guild ID'] == guild.id]
+        if g_id.empty:
+            gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0], index = gl.columns), ignore_index=True)
+            gl.to_csv('Log Channel IDs.csv', index=False)
+        else:
+            pass
 
 @client.command()
 async def log(ctx, *, log_type):
