@@ -10,6 +10,11 @@ before_invites = []
 
 gl = pd.read_csv('Log Channel IDs.csv')
 
+def has_permissions():
+    def predicate(ctx):
+        return ctx.author.guild_permissions.manage_guild == True
+    return commands.check(predicate)
+
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="with ten thousand eyes."))
@@ -40,6 +45,7 @@ async def on_guild_join(guild):
             pass
 
 @client.command()
+@commands.check_any(has_permissions())
 async def log(ctx, *, log_type):
     rows = list(gl['Guild ID'][gl['Guild ID'] == ctx.guild.id].index)
     log_type_scrub = log_type.lower()
@@ -75,6 +81,7 @@ async def log(ctx, *, log_type):
         await ctx.send(f'Updated {log_name} Log Channel to {ctx.channel.mention}')
         gl.to_csv('Log Channel IDs.csv', index=False)
 @client.command()
+@commands.check_any(has_permissions())
 async def clear(ctx, *, log_type):
     rows = list(gl['Guild ID'][gl['Guild ID'] == ctx.guild.id].index)
     log_type_scrub = log_type.lower()
