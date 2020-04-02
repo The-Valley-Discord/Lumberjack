@@ -268,7 +268,7 @@ async def on_member_update(before, after):
     logs = client.get_channel(g_id.iloc[0, 7])
     if before.nick == after.nick:
         pass
-    if logs == None:
+    elif logs == None:
         pass
     else:
         embed=discord.Embed(title=F"**User Nickname Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.nick}\n**After:** {after.nick}", color=0x22ffc2)
