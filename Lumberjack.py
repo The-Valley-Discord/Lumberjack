@@ -19,7 +19,7 @@ async def on_ready():
         global gl
         g_id = gl.loc[gl['Guild ID'] == guild.id]
         if g_id.empty:
-            gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0], index = gl.columns), ignore_index=True)
+            gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0], index = gl.columns), ignore_index=True)
             gl.to_csv('Log Channel IDs.csv', index=False)
         else:
             pass
@@ -36,7 +36,7 @@ async def on_guild_join(guild):
         global gl
         g_id = gl.loc[gl['Guild ID'] == guild.id]
         if g_id.empty:
-            gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0], index = gl.columns), ignore_index=True)
+            gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0], index = gl.columns), ignore_index=True)
             gl.to_csv('Log Channel IDs.csv', index=False)
         else:
             pass
@@ -138,6 +138,13 @@ async def ping(ctx):
     embed.set_author(name=f"{client.user.name}", icon_url=client.user.avatar_url)
     await ctx.send(embed=embed)
 
+@client.command()
+async def m_cache(ctx):
+    cached_m = 0
+    for message in client.cached_messages:
+        cached_m += 1
+    await ctx.send(f'{cached_m}')
+
 format_date = '%b %d, %Y'
 format_time = '%I:%M %p'
 format_datetime = '%b %d, %Y  %I:%M %p'
@@ -183,6 +190,8 @@ async def on_member_join(member):
         embed.set_footer(text=f'Total Members: {member.guild.member_count}')
         embed.timestamp = datetime.utcnow()
         await logs.send(embed = embed)
+        stat_channel = client.get_channel(g_id.iloc[0, 9])
+        await stat_channel.edit(name=f'Members: {member.guild.member_count}')
 
 #member leave event
 
@@ -207,7 +216,8 @@ async def on_member_remove(member):
         else:
             embed.add_field(name=f'**Roles[{len(roles)}]**', value=f'{roles_str}', inline=False)
         await logs.send(embed = embed)
-
+        stat_channel = client.get_channel(g_id.iloc[0, 9])
+        await stat_channel.edit(name=f'Members: {member.guild.member_count}')
 #message delete event
 
 @client.event
@@ -330,4 +340,3 @@ async def on_bulk_message_delete(messages):
 
 with open("token","r") as f:
     client.run(f.readline().strip())
-    bot.run(f.readline().strip())
