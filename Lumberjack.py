@@ -2,8 +2,7 @@ import discord
 from datetime import datetime
 from discord.ext import commands
 import pandas as pd
-client = discord.Client(max_messages = 500000, fetch_offline_members = True)
-bot = commands.Bot(command_prefix = 'lum.')
+client = commands.Bot(command_prefix = 'lum.', max_messages = 500000, fetch_offline_members = True)
 before_invites = []
 
 gl = pd.read_csv('Log Channel IDs.csv')
@@ -42,7 +41,7 @@ async def on_guild_join(guild):
         else:
             pass
 
-@bot.command()
+@client.command()
 @commands.check_any(has_permissions())
 async def log(ctx, *, log_type):
     rows = list(gl['Guild ID'][gl['Guild ID'] == ctx.guild.id].index)
@@ -78,7 +77,7 @@ async def log(ctx, *, log_type):
     else:
         await ctx.send(f'Updated {log_name} Log Channel to {ctx.channel.mention}')
         gl.to_csv('Log Channel IDs.csv', index=False)
-@bot.command()
+@client.command()
 @commands.check_any(has_permissions())
 async def clear(ctx, *, log_type):
     rows = list(gl['Guild ID'][gl['Guild ID'] == ctx.guild.id].index)
@@ -133,7 +132,7 @@ async def on_invite_delete(invite):
     x = [invite.url, invite.uses, invite.inviter]
     before_invites.remove(x)
 
-@bot.command()
+@client.command()
 async def ping(ctx):
     embed=discord.Embed(title='**Ping**', description=f'Pong! {round(client.latency * 1000)}ms')
     embed.set_author(name=f"{client.user.name}", icon_url=client.user.avatar_url)
