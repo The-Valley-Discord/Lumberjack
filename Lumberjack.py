@@ -296,30 +296,32 @@ async def on_member_update(before, after):
 
 @client.event
 async def on_user_update(before, after):
-    g_id = gl.loc[gl['Guild ID'] == after.guild.id]
-    if before.name != after.name or before.discriminator != after.discriminator:
-        logs = client.get_channel(g_id.iloc[0, 6])
-        if logs == None:
-            pass
-        else:
-            embed=discord.Embed(title=F"**Username Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.name}#{before.discriminator}\n**After:** {after.name}#{after.discriminator}", color=0x22ffc2)
-            embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
-            embed.set_thumbnail(url=after.avatar_url)
-            embed.set_footer(text=f'')
-            embed.timestamp = datetime.utcnow()
-            await logs.send(embed=embed)
-    if before.avatar != after.avatar:
-        logs = client.get_channel(g_id.iloc[0, 8])
-        if logs == None:
-            pass
-        else:
-            embed=discord.Embed(title=F"**User avatar Updated**", description=F"**User:** <@!{after.id}>\n\nOld avatar in thumbail. New avatar down below", color=0x8000ff)
-            embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
-            embed.set_thumbnail(url=before.avatar_url)
-            embed.set_footer(text=f'')
-            embed.set_image(url=after.avatar_url_as(size=128))
-            embed.timestamp = datetime.utcnow()
-            await logs.send(embed=embed)
+    for guild in client.guilds:
+        if after in guild.members:
+            g_id = gl.loc[gl['Guild ID'] == guild.id]
+            if before.name != after.name or before.discriminator != after.discriminator:
+                logs = client.get_channel(g_id.iloc[0, 6])
+                if logs == None:
+                    pass
+                else:
+                    embed=discord.Embed(title=F"**Username Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.name}#{before.discriminator}\n**After:** {after.name}#{after.discriminator}", color=0x22ffc2)
+                    embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
+                    embed.set_thumbnail(url=after.avatar_url)
+                    embed.set_footer(text=f'')
+                    embed.timestamp = datetime.utcnow()
+                    await logs.send(embed=embed)
+            if before.avatar != after.avatar:
+                logs = client.get_channel(g_id.iloc[0, 8])
+                if logs == None:
+                    pass
+                else:
+                    embed=discord.Embed(title=F"**User avatar Updated**", description=F"**User:** <@!{after.id}>\n\nOld avatar in thumbail. New avatar down below", color=0x8000ff)
+                    embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
+                    embed.set_thumbnail(url=before.avatar_url)
+                    embed.set_footer(text=f'')
+                    embed.set_image(url=after.avatar_url_as(size=128))
+                    embed.timestamp = datetime.utcnow()
+                    await logs.send(embed=embed)
 @client.event
 async def on_bulk_message_delete(messages):
     message = messages[0]
