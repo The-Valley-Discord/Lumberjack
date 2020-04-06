@@ -85,6 +85,7 @@ async def log(ctx, *, log_type):
     elif log_type_split[0] == 'stats':
         gl.iloc[rows, 9] = logs.id
         log_name = 'Stats'
+        await logs.edit(name=f'Members: {logs.guild.member_count}')
     if len(log_name) == 0:
         await ctx.send(f'Incorrect log type. Please use one of the folowing. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
     else:
@@ -207,7 +208,10 @@ async def on_member_join(member):
         embed.timestamp = datetime.utcnow()
         await logs.send(embed = embed)
         stat_channel = client.get_channel(g_id.iloc[0, 9])
-        await stat_channel.edit(name=f'Members: {member.guild.member_count}')
+        if stat_channel == None:
+            pass
+        else:
+            await stat_channel.edit(name=f'Members: {member.guild.member_count}')
 
 #member leave event
 
@@ -233,7 +237,10 @@ async def on_member_remove(member):
             embed.add_field(name=f'**Roles[{len(roles)}]**', value=f'{roles_str}', inline=False)
         await logs.send(embed = embed)
         stat_channel = client.get_channel(g_id.iloc[0, 9])
-        await stat_channel.edit(name=f'Members: {member.guild.member_count}')
+        if stat_channel == None:
+            pass
+        else:
+            await stat_channel.edit(name=f'Members: {member.guild.member_count}')
 #message delete event
 
 @client.event
