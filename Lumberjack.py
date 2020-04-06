@@ -2,7 +2,8 @@ import discord
 from datetime import datetime
 from discord.ext import commands
 import pandas as pd
-client = commands.Bot(command_prefix = 'lum.')
+client = discord.Client(max_messages = 500000, fetch_offline_members = True)
+bot = commands.Bot(command_prefix = 'lum.')
 before_invites = []
 
 gl = pd.read_csv('Log Channel IDs.csv')
@@ -41,7 +42,7 @@ async def on_guild_join(guild):
         else:
             pass
 
-@client.command()
+@bot.command()
 @commands.check_any(has_permissions())
 async def log(ctx, *, log_type):
     rows = list(gl['Guild ID'][gl['Guild ID'] == ctx.guild.id].index)
@@ -77,7 +78,7 @@ async def log(ctx, *, log_type):
     else:
         await ctx.send(f'Updated {log_name} Log Channel to {ctx.channel.mention}')
         gl.to_csv('Log Channel IDs.csv', index=False)
-@client.command()
+@bot.command()
 @commands.check_any(has_permissions())
 async def clear(ctx, *, log_type):
     rows = list(gl['Guild ID'][gl['Guild ID'] == ctx.guild.id].index)
@@ -132,7 +133,7 @@ async def on_invite_delete(invite):
     x = [invite.url, invite.uses, invite.inviter]
     before_invites.remove(x)
 
-@client.command()
+@bot.command()
 async def ping(ctx):
     embed=discord.Embed(title='**Ping**', description=f'Pong! {round(client.latency * 1000)}ms')
     embed.set_author(name=f"{client.user.name}", icon_url=client.user.avatar_url)
@@ -329,4 +330,5 @@ async def on_bulk_message_delete(messages):
         pass
 
 with open("token","r") as f:
-    client.run(f.readline().strip(), max_messages = 500000, fetch_offline_members = True)
+    client.run(f.readline().strip())
+    bot.run(f.readline().strip())
