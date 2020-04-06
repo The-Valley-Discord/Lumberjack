@@ -2,10 +2,7 @@ import discord
 from datetime import datetime
 from discord.ext import commands
 import pandas as pd
-
 client = commands.Bot(command_prefix = 'lum.')
-client.max_messages = 500000
-client.fetch_offline_members = True
 before_invites = []
 
 gl = pd.read_csv('Log Channel IDs.csv')
@@ -332,4 +329,4 @@ async def on_bulk_message_delete(messages):
         pass
 
 with open("token","r") as f:
-    client.run(f.readline().strip())
+    client.run(f.readline().strip(), max_messages = 500000, fetch_offline_members = True)
