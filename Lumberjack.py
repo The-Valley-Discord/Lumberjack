@@ -48,34 +48,47 @@ async def log(ctx, *, log_type):
     log_type_scrub = log_type.lower()
     log_type_split = log_type_scrub.split()
     log_name = ''
+    channel_id = 0
+    strip = ['<', '>', '#']
+    str_channel = log_type_split[1]
+    for item in strip:
+        str_channel = str_channel.strip(item)
+    if str_channel == 'here':
+        channel_id = ctx.channel.id
+    else:
+        channel_id = int(str_channel)
+    logs = client.get_channel(channel_id)
     if log_type_split[0] == 'join':
-        gl.iloc[rows, 1] = ctx.channel.id
+        gl.iloc[rows, 1] = logs.id
         log_name = 'Join'
     elif log_type_split[0] == 'leave':
-        gl.iloc[rows, 2] = ctx.channel.id
+        gl.iloc[rows, 2] = logs.id
         log_name = 'Leave'
     elif log_type_split[0] == 'delete':
-        gl.iloc[rows, 3] = ctx.channel.id
+        gl.iloc[rows, 3] = logs.id
         log_name = 'Delete'
     elif log_type_split[0] == 'bulk_delete':
-        gl.iloc[rows, 4] = ctx.channel.id
+        gl.iloc[rows, 4] = logs.id
         log_name = 'Bulk Delete'
     elif log_type_split[0] == 'edit':
-        gl.iloc[rows, 5] = ctx.channel.id
+        gl.iloc[rows, 5] = logs.id
         log_name = 'Edit'
     elif log_type_split[0] == 'username':
-        gl.iloc[rows, 6] = ctx.channel.id
+        gl.iloc[rows, 6] = logs.id
         log_name = 'Username'
     elif log_type_split[0] == 'nickname':
-        gl.iloc[rows, 7] = ctx.channel.id
+        gl.iloc[rows, 7] = logs.id
         log_name = 'Nickname'
     elif log_type_split[0] == 'avatar':
-        gl.iloc[rows, 8] = ctx.channel.id
+        gl.iloc[rows, 8] = logs.id
         log_name = 'Avatar'
+    elif log_type_split[0] == 'stats':
+        gl.iloc[rows, 9] = logs.id
+        log_name = 'Stats'
     if len(log_name) == 0:
-        await ctx.send(f'Incorrect log type. Please use one of the folowing. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, or Avatar')
+        await ctx.send(f'Incorrect log type. Please use one of the folowing. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
     else:
-        await ctx.send(f'Updated {log_name} Log Channel to {ctx.channel.mention}')
+        await ctx.send(f'Updated {log_name} Log Channel to {logs.mention}')
         gl.to_csv('Log Channel IDs.csv', index=False)
 @client.command()
 @commands.check_any(has_permissions())
@@ -108,8 +121,11 @@ async def clear(ctx, *, log_type):
     elif log_type_split[0] == 'avatar':
         gl.iloc[rows, 8] = 0
         log_name = 'Avatar'
+    elif log_type_split[0] == 'stats':
+            gl.iloc[rows, 9] = 0
+            log_name = 'Stats'
     if len(log_name) == 0:
-        await ctx.send(f'Incorrect log type. Please use one of the folowing. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, or Avatar')
+        await ctx.send(f'Incorrect log type. Please use one of the folowing. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
     else:
         await ctx.send(f'Disabled {log_name} logs.')
         gl.to_csv('Log Channel IDs.csv', index=False)
