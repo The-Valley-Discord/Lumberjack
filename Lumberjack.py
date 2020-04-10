@@ -2,24 +2,103 @@ import discord
 from datetime import datetime
 from discord.ext import commands
 import pandas as pd
-client = commands.Bot(command_prefix = 'lum.', max_messages = 500000, fetch_offline_members = True)
+import sqlite3
+
+bot = commands.Bot(command_prefix='lum.')
 before_invites = []
 
 gl = pd.read_csv('Log Channel IDs.csv')
 
+conn = sqlite3.connect('log.db')
+
+c = conn.cursor()
+
+c.execute(""" CREATE TABLE IF NOT EXISTS messages (
+            id integer PRIMARY KEY,
+            author integer NOT NULL,
+            authorname text,
+            authordisplayname text,
+            channelid integer,
+            channelname text,
+            guildid integer,
+            clean_content text,
+            created_at timestamp,
+            pfp text,
+            attachments integer
+            ) """)
+c.execute(""" CREATE TABLE IF NOT EXISTS attachment_urls (
+            message_id integer,
+            attachment text
+            ) """)
+
+
+def add_message(conn, intmessage):
+    """
+    Create a new project into the projects table
+    :param intmessage:
+    :param conn:
+    :return: message id
+    """
+    sql = '''INSERT INTO messages (id,author,authorname,authordisplayname,channelid,channelname,guildid,
+    clean_content,created_at,pfp,attachments) VALUES(?,?,?,?,?,?,?,?,?,?,?) '''
+    c.execute(sql, intmessage)
+    conn.commit()
+    return c.lastrowid
+
+
+def get_msg_by_id(id):
+    c.execute("SELECT * FROM messages WHERE id=:id", {"id": id})
+    return c.fetchone()
+
+
+def get_att_by_id(id):
+    c.execute("SELECT * FROM attachment_urls WHERE message_id=:id", {"id": id})
+    return c.fetchall()
+
+
+def update_msg(id, content):
+    with conn:
+        c.execute("""UPDATE messages SET clean_content = :clean_content
+                    WHERE id = :id""",
+                  {'id': id, 'clean_content': content})
+
+
 def has_permissions():
     def predicate(ctx):
         return ctx.author.guild_permissions.manage_guild == True
+
     return commands.check(predicate)
 
-@client.event
+
+@bot.event
+async def on_message(message):
+    attachments = [f"{attachment.proxy_url}" for attachment in message.attachments]
+    author = f'{message.author.name}#{message.author.discriminator}'
+    avatar_url = f'{message.author.avatar_url}'
+    attachment_bool = False
+    if len(attachments) > 0:
+        attachment_bool = True
+    mymessage = (
+        message.id, message.author.id, author, message.author.display_name, message.channel.id, message.channel.name,
+        message.guild.id,
+        message.clean_content, message.created_at, avatar_url, attachment_bool)
+    add_message(conn, mymessage)
+    if attachment_bool:
+        for attachment in attachments:
+            c.execute("INSERT INTO attachment_urls VALUES (:message_id, :attachment)",
+                      {'message_id': message.id, 'attachment': attachment})
+    await bot.process_commands(message)
+
+
+@bot.event
 async def on_ready():
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="with ten thousand eyes."))
-    for guild in client.guilds:
+    await bot.change_presence(
+        activity=discord.Activity(type=discord.ActivityType.watching, name="with ten thousand eyes."))
+    for guild in bot.guilds:
         global gl
         g_id = gl.loc[gl['Guild ID'] == guild.id]
         if g_id.empty:
-            gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0], index = gl.columns), ignore_index=True)
+            gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0], index=gl.columns), ignore_index=True)
             gl.to_csv('Log Channel IDs.csv', index=False)
         else:
             pass
@@ -28,7 +107,8 @@ async def on_ready():
             before_invites.append(x)
     print('Bot is ready.')
 
-@client.event
+
+@bot.event
 async def on_guild_join(guild):
     for invite in await guild.invites():
         x = [invite.url, invite.uses, invite.inviter]
@@ -36,12 +116,13 @@ async def on_guild_join(guild):
         global gl
         g_id = gl.loc[gl['Guild ID'] == guild.id]
         if g_id.empty:
-            gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0], index = gl.columns), ignore_index=True)
+            gl = gl.append(pd.Series([guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0], index=gl.columns), ignore_index=True)
             gl.to_csv('Log Channel IDs.csv', index=False)
         else:
             pass
 
-@client.command()
+
+@bot.command()
 @commands.check_any(has_permissions())
 async def log(ctx, *, log_type):
     rows = list(gl['Guild ID'][gl['Guild ID'] == ctx.guild.id].index)
@@ -57,7 +138,7 @@ async def log(ctx, *, log_type):
         channel_id = ctx.channel.id
     else:
         channel_id = int(str_channel)
-    logs = client.get_channel(channel_id)
+    logs = bot.get_channel(channel_id)
     if log_type_split[0] == 'join':
         gl.iloc[rows, 1] = logs.id
         log_name = 'Join'
@@ -87,11 +168,14 @@ async def log(ctx, *, log_type):
         log_name = 'Stats'
         await logs.edit(name=f'Members: {logs.guild.member_count}')
     if len(log_name) == 0:
-        await ctx.send(f'Incorrect log type. Please use one of the folowing. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
+        await ctx.send(
+            'Incorrect log type. Please use one of the following. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
     else:
         await ctx.send(f'Updated {log_name} Log Channel to {logs.mention}')
         gl.to_csv('Log Channel IDs.csv', index=False)
-@client.command()
+
+
+@bot.command()
 @commands.check_any(has_permissions())
 async def clear(ctx, *, log_type):
     rows = list(gl['Guild ID'][gl['Guild ID'] == ctx.guild.id].index)
@@ -123,62 +207,60 @@ async def clear(ctx, *, log_type):
         gl.iloc[rows, 8] = 0
         log_name = 'Avatar'
     elif log_type_split[0] == 'stats':
-            gl.iloc[rows, 9] = 0
-            log_name = 'Stats'
+        gl.iloc[rows, 9] = 0
+        log_name = 'Stats'
     if len(log_name) == 0:
-        await ctx.send(f'Incorrect log type. Please use one of the folowing. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
+        await ctx.send(
+            'Incorrect log type. Please use one of the following. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
     else:
         await ctx.send(f'Disabled {log_name} logs.')
         gl.to_csv('Log Channel IDs.csv', index=False)
 
 
-
-@client.event
+@bot.event
 async def on_guild_remove(guild):
     for invite in await guild.invites():
         x = [invite.url, invite.uses, invite.inviter]
         before_invites.remove(x)
 
-@client.event
+
+@bot.event
 async def on_invite_create(invite):
     x = [invite.url, invite.uses, invite.inviter]
     before_invites.append(x)
 
-@client.event
+
+@bot.event
 async def on_invite_delete(invite):
     x = [invite.url, invite.uses, invite.inviter]
     before_invites.remove(x)
 
-@client.command()
+
+@bot.command()
 async def ping(ctx):
-    embed=discord.Embed(title='**Ping**', description=f'Pong! {round(client.latency * 1000)}ms')
-    embed.set_author(name=f"{client.user.name}", icon_url=client.user.avatar_url)
+    embed = discord.Embed(title='**Ping**', description=f'Pong! {round(bot.latency * 1000)}ms')
+    embed.set_author(name=f"{bot.user.name}", icon_url=bot.user.avatar_url)
     await ctx.send(embed=embed)
 
-@client.command()
-async def m_cache(ctx):
-    cached_m = 0
-    for message in client.cached_messages:
-        cached_m += 1
-    await ctx.send(f'{cached_m}')
 
 format_date = '%b %d, %Y'
 format_time = '%I:%M %p'
 format_datetime = '%b %d, %Y  %I:%M %p'
 
-#member join event
 
-@client.event
+# member join event
+
+@bot.event
 async def on_member_join(member):
     g_id = gl.loc[gl['Guild ID'] == member.guild.id]
-    logs = client.get_channel(g_id.iloc[0, 1])
+    logs = bot.get_channel(g_id.iloc[0, 1])
     account_age = datetime.utcnow() - member.created_at
     global before_invites
     after_invites = []
     invite_used = 'Vanity URL'
     invite_uses = ''
     inviter = ''
-    for guild in client.guilds:
+    for guild in bot.guilds:
         for invite in await guild.invites():
             x = [invite.url, invite.uses, invite.inviter]
             after_invites.append(x)
@@ -191,40 +273,62 @@ async def on_member_join(member):
                 invite_uses = f'({after_invite[1]} uses)'
                 inviter = after_invite[2]
                 before_invites = after_invites
-    if logs == None:
+    if logs is None:
         pass
     else:
-        if (account_age.seconds//3600) == 0 and account_age.days == 0:
-            embed=discord.Embed(title=f'**User Joined**', description=f"**Name:** {member.mention}\n**Created on:** {member.created_at.strftime(format_date)}\n**Account age:** {account_age.days} days old\n**Invite used:** {invite_used} {invite_uses}\n**Created By:** {inviter}\n\n**New Account**\nCreated {(account_age.seconds%3600)//60} minutes {((account_age.seconds%3600)%60)} seconds" , color=0xffc704)
-        elif 0 < (account_age.seconds//3600) and account_age.days == 0:
-            embed=discord.Embed(title=f'**User Joined**', description=f"**Name:** {member.mention}\n**Created on:** {member.created_at.strftime(format_date)}\n**Account age:** {account_age.days} days old\n**Invite used:** {invite_used} {invite_uses}\n**Created By:** {inviter}\n\n**New Account**\nCreated {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes {((account_age.seconds%3600)%60)} seconds" , color=0xffc704)
+        embed = discord.Embed(title=f'**User Joined**',
+                              description=f'''**Name:** {member.mention}
+        **Created on:** {member.created_at.strftime(format_date)}
+        **Account age:** {account_age.days} days old
+        **Invite used:** {invite_used} {invite_uses}
+        **Created By:** {inviter}''',
+        color=0x008000)
+        if (account_age.seconds // 3600) == 0 and account_age.days == 0:
+            embed.add_field(name='New Account',
+                            value=f'Created {(account_age.seconds % 3600) // 60} minutes {((account_age.seconds % 3600) % 60)} seconds',
+                            inline=False)
+            discord.Embed(color = 0xffc704)
+        elif 0 < (account_age.seconds // 3600) and account_age.days == 0:
+            embed.add_field(name='New Account',
+                            value=f'Created {account_age.seconds // 3600} hours {(account_age.seconds % 3600) // 60} minutes {((account_age.seconds % 3600) % 60)} seconds',
+                            inline=False)
+            discord.Embed(color=0xffc704)
         elif 0 < account_age.days < 7:
-            embed=discord.Embed(title=f'**User Joined**', description=f"**Name:** {member.mention}\n**Created on:** {member.created_at.strftime(format_date)}\n**Account age:** {account_age.days} days old\n**Invite used:** {invite_used} {invite_uses}\n**Created By:** {inviter}\n\n**New Account**\nCreated {account_age.days} days {account_age.seconds//3600} hours {(account_age.seconds%3600)//60} minutes" , color=0xffc704)
+            embed.add_field(name='New Account',
+                            value=f'Created {account_age.days} days {account_age.seconds // 3600} hours {(account_age.seconds % 3600) // 60} minutes''',
+                            inline=False)
+            discord.Embed(color=0xffc704)
         else:
-            embed=discord.Embed(title=f'**User Joined**', description=f"**Name:** {member.mention}\n**Created on:** {member.created_at.strftime(format_date)}\n**Account age:** {account_age.days} days old\n**Invite used:** {invite_used} {invite_uses}\n**Created By:** {inviter}", color=0x008000)
+            pass
         embed.set_author(name=f'{member.name}#{member.discriminator} ({member.id})')
         embed.set_thumbnail(url=member.avatar_url)
         embed.set_footer(text=f'Total Members: {member.guild.member_count}')
         embed.timestamp = datetime.utcnow()
-        await logs.send(embed = embed)
-        stat_channel = client.get_channel(g_id.iloc[0, 9])
-        if stat_channel == None:
+        await logs.send(embed=embed)
+        stat_channel = bot.get_channel(g_id.iloc[0, 9])
+        if stat_channel is None:
             pass
         else:
             await stat_channel.edit(name=f'Members: {member.guild.member_count}')
 
-#member leave event
 
-@client.event
+# member leave event
+
+@bot.event
 async def on_member_remove(member):
     g_id = gl.loc[gl['Guild ID'] == member.guild.id]
-    logs = client.get_channel(g_id.iloc[0, 2])
-    if logs == None:
+    logs = bot.get_channel(g_id.iloc[0, 2])
+    if logs is None:
         pass
     else:
         account_age = datetime.utcnow() - member.created_at
         time_on_server = datetime.utcnow() - member.joined_at
-        embed=discord.Embed(title=f'**User Left**', description=f"Name: {member.mention}\nCreated on: {member.created_at.strftime(format_date)}\nAccount age: {account_age.days} days old\nJoined on: {member.joined_at.strftime(format_date)} ({time_on_server.days} days ago)", color=0xd90000)
+        embed = discord.Embed(title=f'**User Left**',
+                              description=f'''Name: {member.mention}
+                                            Created on: {member.created_at.strftime(format_date)}
+                                            Account age: {account_age.days} days old
+                                            Joined on: {member.joined_at.strftime(format_date)} ({time_on_server.days} days ago)''',
+                              color=0xd90000)
         embed.set_author(name=f'{member.name}#{member.discriminator} ({member.id})')
         embed.set_thumbnail(url=member.avatar_url)
         embed.set_footer(text=f'Total Members: {member.guild.member_count}')
@@ -235,133 +339,198 @@ async def on_member_remove(member):
             embed.add_field(name=f'**Roles[{len(roles)}]**', value="None", inline=False)
         else:
             embed.add_field(name=f'**Roles[{len(roles)}]**', value=f'{roles_str}', inline=False)
-        await logs.send(embed = embed)
-        stat_channel = client.get_channel(g_id.iloc[0, 9])
-        if stat_channel == None:
+        await logs.send(embed=embed)
+        stat_channel = bot.get_channel(g_id.iloc[0, 9])
+        if stat_channel is None:
             pass
         else:
             await stat_channel.edit(name=f'Members: {member.guild.member_count}')
-#message delete event
 
-@client.event
-async def on_message_delete(message):
-    g_id = gl.loc[gl['Guild ID'] == message.guild.id]
-    logs = client.get_channel(g_id.iloc[0, 3])
-    if message.author.bot:
+
+# message delete event
+
+
+@bot.event
+async def on_raw_message_delete(payload):
+    g_id = gl.loc[gl['Guild ID'] == payload.guild_id]
+    logs = bot.get_channel(g_id.iloc[0, 3])
+    channel = bot.get_channel(payload.channel_id)
+    msg = get_msg_by_id(payload.message_id)
+    att = get_att_by_id(payload.message_id)
+    author = await bot.fetch_user(msg[1])
+    attachments = []
+    for attachment in att:
+        attachments.append(attachment[1])
+    if author.bot:
         pass
-    elif logs == None:
+    elif logs is None:
         pass
     else:
-        attachments = [f"{attachment.proxy_url}" for attachment in message.attachments]
-        attachments_str = " ".join(attachments)
-        if len(attachments) == 0:
-            embed=discord.Embed(title=F"**Message deleted in #{message.channel}**", description=F"**Author:** {message.author.mention}\n**Channel:** <#{message.channel.id}> ({message.channel.id})\n**Message ID:** {message.id}", color=0xd90000)
-            embed.add_field(name=f'**Content**', value=f'{message.content}', inline=False)
+        embed = discord.Embed(title=F"**Message deleted in #{channel}**",
+                              description=F'''**Author:** {author.mention}
+                                            **Channel:** {channel.mention} ({channel.id})
+                                            **Message ID:** {payload.message_id}''',
+                              color=0xd90000)
+        if len(msg[7]) == 0:
+            embed.add_field(name=f'**Content**', value='`Possibly Embedded Content`', inline=False)
+        elif len(msg[7]) <= 1024:
+            embed.add_field(name=f'**Content**', value=f'{msg[7]}', inline=False)
+        else:
+            prts = msg[7]
+            prt_1 = prts[:1024]
+            prt_2 = prts[1024:]
+            embed.add_field(name=f'**Content**', value=f'{prt_1}', inline=False)
+            embed.add_field(name=f'Continued', value=f'{prt_2}')
+        if not msg[10]:
             embed.add_field(name=f'**Attachments**', value=f'None', inline=False)
         else:
-            embed=discord.Embed(title=F"**Message deleted in #{message.channel}**", description=F"**Author:** {message.author.mention}\n**Channel:** <#{message.channel.id}> ({message.channel.id})\n**Message ID:** {message.id}", color=0xd90000)
-            embed.set_image(url=attachments[0])
-            if len(message.content) == 0:
-                embed.add_field(name=f'**Content**', value=f'`Blank`', inline=True)
-            else:
-                embed.add_field(name=f'**Content**', value=f'{message.content}', inline=True)
+            attachments_str = " ".join(attachments)
             embed.add_field(name=f'**Attachments**', value=f'{attachments_str}', inline=False)
-        embed.set_author(name=f'{message.author.name}#{message.author.discriminator} ({message.author.id})')
-        embed.set_thumbnail(url=message.author.avatar_url)
+        embed.set_author(name=f'{author.name}#{author.discriminator} ({author.id})')
+        embed.set_thumbnail(url=author.avatar_url)
         embed.set_footer(text=f'')
         embed.timestamp = datetime.utcnow()
         await logs.send(embed=embed)
 
-#message edit event
 
-@client.event
-async def on_message_edit(before, after):
-    g_id = gl.loc[gl['Guild ID'] == after.guild.id]
-    logs = client.get_channel(g_id.iloc[0, 5])
-    if after.author.bot:
-        pass
-    elif before.content == after.content:
-        pass
-    elif logs == None:
+# message edit event
+
+@bot.event
+async def on_raw_message_edit(payload):
+    channel = bot.get_channel(payload.channel_id)
+    g_id = gl.loc[gl['Guild ID'] == channel.guild.id]
+    logs = bot.get_channel(g_id.iloc[0, 5])
+
+    before = get_msg_by_id(payload.message_id)
+    after = await channel.fetch_message(payload.message_id)
+    if before[7] == after.clean_content:
         pass
     else:
-        embed=discord.Embed(title=F"**Message edited in #{after.channel}**", description=F"**Author:** <@!{after.author.id}>\n**Channel:** <#{after.channel.id}> ({after.channel.id})\n**Message ID:** {after.id}", color=0xffc704)
-        embed.set_author(name=f'{after.author.name}#{after.author.discriminator} ({after.author.id})')
-        if len(before.content) == 0:
-            embed.add_field(name=f'**Before**', value=f'`Blank`', inline=False)
+        if after.author.bot:
+            pass
+        elif logs is None:
+            pass
         else:
-            embed.add_field(name=f'**Before**', value=f'{before.content} ', inline=False)
-        embed.add_field(name=f'**After**', value=f'{after.content} ', inline=False)
-        embed.set_thumbnail(url=after.author.avatar_url)
-        embed.set_footer(text=f'')
-        embed.timestamp = datetime.utcnow()
-        await logs.send(embed=embed)
+            embed = discord.Embed(title=F"**Message edited in #{after.channel}**",
+                                  description=F'''**Author:** <@!{after.author.id}>
+                                                **Channel:** <#{after.channel.id}> ({after.channel.id})
+                                                **Message ID:** {after.id}''',
+                                  color=0xffc704)
+            embed.set_author(name=f'{after.author.name}#{after.author.discriminator} ({after.author.id})')
+            if len(before[7]) == 0:
+                embed.add_field(name=f'**Before**', value=f'`Blank`', inline=False)
+            elif len(before[7]) <= 1024:
+                embed.add_field(name=f'**Before**', value=f'{before[7]} ', inline=False)
+            else:
+                prts = before[7]
+                prt_1 = prts[:1024]
+                prt_2 = prts[1024:]
+                embed.add_field(name=f'**Before**', value=f'{prt_1}', inline=False)
+                embed.add_field(name=f'Continued', value=f'{prt_2}')
+            if len(after.content) <= 1024:
+                embed.add_field(name=f'**After**', value=f'{after.content} ', inline=False)
+            else:
+                prts = after.content
+                prt_1 = prts[:1024]
+                prt_2 = prts[1024:]
+                embed.add_field(name=f'**After**', value=f'{prt_1}', inline=False)
+                embed.add_field(name=f'Continued', value=f'{prt_2}')
+            embed.set_thumbnail(url=after.author.avatar_url)
+            embed.set_footer(text=f'')
+            embed.timestamp = datetime.utcnow()
+            await logs.send(embed=embed)
+            content = after.content
+            update_msg(payload.message_id, content)
 
-#member update event (nickname, roles, activity, status)
 
-@client.event
+# member update event (nickname, roles, activity, status)
+
+@bot.event
 async def on_member_update(before, after):
     g_id = gl.loc[gl['Guild ID'] == after.guild.id]
-    logs = client.get_channel(g_id.iloc[0, 7])
+    logs = bot.get_channel(g_id.iloc[0, 7])
     if before.nick == after.nick:
         pass
-    elif logs == None:
+    elif logs is None:
         pass
     else:
-        embed=discord.Embed(title=F"**User Nickname Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.nick}\n**After:** {after.nick}", color=0x22ffc2)
+        embed = discord.Embed(title=F"**User Nickname Updated**",
+                              description=F'''**User:** <@!{after.id}>\n
+                                            **Before:** {before.nick}
+                                            **After:** {after.nick}''',
+                              color=0x22ffc2)
         embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
         embed.set_thumbnail(url=after.avatar_url)
         embed.set_footer(text=f'')
         embed.timestamp = datetime.utcnow()
         await logs.send(embed=embed)
 
-#user update event (avatar, username, discriminator)
 
-@client.event
+# user update event (avatar, username, discriminator)
+
+@bot.event
 async def on_user_update(before, after):
-    for guild in client.guilds:
+    for guild in bot.guilds:
         if after in guild.members:
             g_id = gl.loc[gl['Guild ID'] == guild.id]
             if before.name != after.name or before.discriminator != after.discriminator:
-                logs = client.get_channel(g_id.iloc[0, 6])
-                if logs == None:
+                logs = bot.get_channel(g_id.iloc[0, 6])
+                if logs is None:
                     pass
                 else:
-                    embed=discord.Embed(title=F"**Username Updated**", description=F"**User:** <@!{after.id}>\n\n**Before:** {before.name}#{before.discriminator}\n**After:** {after.name}#{after.discriminator}", color=0x22ffc2)
+                    embed = discord.Embed(title=F"**Username Updated**",
+                                          description=F'''**User:** <@!{after.id}>\n
+                                                        **Before:** {before.name}#{before.discriminator}
+                                                        **After:** {after.name}#{after.discriminator}''',
+                                          color=0x22ffc2)
                     embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
                     embed.set_thumbnail(url=after.avatar_url)
                     embed.set_footer(text=f'')
                     embed.timestamp = datetime.utcnow()
                     await logs.send(embed=embed)
             if before.avatar != after.avatar:
-                logs = client.get_channel(g_id.iloc[0, 8])
-                if logs == None:
+                logs = bot.get_channel(g_id.iloc[0, 8])
+                if logs is None:
                     pass
                 else:
-                    embed=discord.Embed(title=F"**User avatar Updated**", description=F"**User:** <@!{after.id}>\n\nOld avatar in thumbail. New avatar down below", color=0x8000ff)
+                    embed = discord.Embed(title=F"**User avatar Updated**",
+                                          description=F'''**User:** <@!{after.id}>\n
+                                                        Old avatar in thumbnail. New avatar down below''',
+                                          color=0x8000ff)
                     embed.set_author(name=f'{after.name}#{after.discriminator} ({after.id})')
                     embed.set_thumbnail(url=before.avatar_url)
                     embed.set_footer(text=f'')
                     embed.set_image(url=after.avatar_url_as(size=128))
                     embed.timestamp = datetime.utcnow()
                     await logs.send(embed=embed)
-@client.event
-async def on_bulk_message_delete(messages):
-    message = messages[0]
-    g_id = gl.loc[gl['Guild ID'] == message.guild.id]
-    logs = client.get_channel(g_id.iloc[0, 4])
+
+
+@bot.event
+async def on_raw_bulk_message_delete(payload):
+    messages = []
+    ids = sorted(payload.message_ids)
+    for id in ids:
+        messages.append(get_msg_by_id(id))
+    g_id = gl.loc[gl['Guild ID'] == payload.guild_id]
+    logs = bot.get_channel(g_id.iloc[0, 4])
     current_time = datetime.utcnow()
-    purged_channel = message.channel.mention
-    embed=discord.Embed(title=F"**Bulk Message Delete**", description=F"**Message Count:** {len(messages)}\n**Channel:** {purged_channel}\n Full message dump attached below.", color=0xff0080)
+    purged_channel = bot.get_channel(payload.channel_id)
+    embed = discord.Embed(title=F"**Bulk Message Delete**",
+                          description=F'''**Message Count:** {len(messages)}
+                                        **Channel:** #{purged_channel.mention}
+                                        Full message dump attached below.''',
+
+                          color=0xff0080)
     embed.timestamp = datetime.utcnow()
     with open('./log.txt', 'w') as file:
         for message in messages:
-            file.writelines(f'Author:{message.author.name}#{message.author.discriminator} ({message.author.id})\nID:{message.id}\nContent: {message.content}\n\n')
+            file.writelines(f'Author: {message[2]} ({message[1]})\nID:{message[0]}\nContent: {message[7]}\n\n')
     try:
         await logs.send(embed=embed)
         await logs.send(file=discord.File('./log.txt', filename=f'{current_time.strftime(format_datetime)}.txt'))
     except discord.HTTPException:
         pass
 
-with open("token","r") as f:
-    client.run(f.readline().strip())
+
+with open("tokenlive", "r") as f:
+    bot.run(f.readline().strip())
