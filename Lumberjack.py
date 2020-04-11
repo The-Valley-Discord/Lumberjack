@@ -91,14 +91,6 @@ def update_msg(id, content):
                   {'id': id, 'clean_content': content})
 
 
-def update_guild(guildid, log, id):
-    with conn:
-        c.execute(f"""UPDATE log_channels 
-                    SET {log} = :id
-                    WHERE guildid = :guildid""",
-                  {'guildid': guildid, 'id': id})
-
-
 def has_permissions():
     def predicate(ctx):
         return ctx.author.guild_permissions.manage_guild is True
@@ -159,11 +151,11 @@ async def on_guild_join(guild):
 @bot.command()
 @commands.check_any(has_permissions())
 async def log(ctx, arg1, arg2):
-    gld = get_log_by_id(ctx.guild.id)
-    log_name = f'{arg1.lower()}'
+    log_name = ''
     channel_id = 0
     strip = ['<', '>', '#']
-    str_channel = arg2
+    str_channel = arg2.lower()
+    log_type = arg1.lower()
     for item in strip:
         str_channel = str_channel.strip(item)
     if str_channel == 'here':
@@ -171,47 +163,88 @@ async def log(ctx, arg1, arg2):
     else:
         channel_id = int(str_channel)
     logs = bot.get_channel(channel_id)
-    log_rename = ['join', 'leave', 'delete']
-    log_renamed = ''
-    if log_name in log_rename:
-        log_renamed = f'{log_name}id'
-    elif log_name == 'stats':
-        log_renamed = 'stat_member'
-    else:
-        log_renamed = log_name
-    valid_logs = ['joinid', 'leaveid', 'deleteid', 'delete_bulk', 'edit', 'username', 'nickname', 'avatar',
-                  'stat_member']
-    if log_renamed in valid_logs and logs is not None:
-        await ctx.send(f'Updated {log_name} Log Channel to {logs.mention}')
-        update_guild(ctx.guild.id, log_renamed, logs.id)
-        stats = bot.get_channel(gld[9])
-        await stats.edit(name=f'Members: {logs.guild.member_count}')
-    elif log_renamed in valid_logs and logs is None:
-        await ctx.send('Invalid channel ID')
-    else:
+    if log_type == 'join':
+        sql = """UPDATE log_channels SET joinid = ? WHERE guildid = ?"""
+        log_name = 'Join'
+    elif log_type == 'leave':
+        sql = """UPDATE log_channels SET leaveid = ? WHERE guildid = ?"""
+        log_name = 'Leave'
+    elif log_type == 'delete':
+        sql = """UPDATE log_channels SET deleteid = ? WHERE guildid = ?"""
+        log_name = 'Delete'
+    elif log_type == 'bulk_delete':
+        sql = """UPDATE log_channels SET delete_bulk = ? WHERE guildid = ?"""
+        log_name = 'Bulk Delete'
+    elif log_type == 'edit':
+        sql = """UPDATE log_channels SET edit = ? WHERE guildid = ?"""
+        log_name = 'Edit'
+    elif log_type == 'username':
+        sql = """UPDATE log_channels SET username = ? WHERE guildid = ?"""
+        log_name = 'Username'
+    elif log_type == 'nickname':
+        sql = """UPDATE log_channels SET nickname = ? WHERE guildid = ?"""
+        log_name = 'Nickname'
+    elif log_type == 'avatar':
+        sql = """UPDATE log_channels SET avatar = ? WHERE guildid = ?"""
+        log_name = 'Avatar'
+    elif log_type == 'stats':
+        sql = """UPDATE log_channels SET stat_member = ? WHERE guildid = ?"""
+        log_name = 'Stats'
+        if logs is None:
+            pass
+        else:
+            await logs.edit(name=f'Members: {logs.guild.member_count}')
+    if len(log_name) == 0:
         await ctx.send(
             'Incorrect log type. Please use one of the following. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
-
+    elif logs is None:
+        await ctx.send('Invalid channel ID')
+    else:
+        await ctx.send(f'Updated {log_name} Log Channel to {logs.mention}')
+        task = (logs.id, ctx.guild.id)
+        c.execute(sql, task)
+        conn.commit()
 
 @bot.command()
 @commands.check_any(has_permissions())
 async def clear(ctx, arg1):
-    log_name = f'{arg1.lower()}'
-    log_rename = ['join', 'leave', 'delete']
-    log_renamed = ''
-    if log_name in log_rename:
-        log_renamed = f'{log_name}id'
-    elif log_name == 'stats':
-        log_renamed = 'stat_member'
+    log_type = arg1.lower()
+    log_name = ''
+    if log_type == 'join':
+        sql = """UPDATE log_channels SET joinid = ? WHERE guildid = ?"""
+        log_name = 'Join'
+    elif log_type == 'leave':
+        sql = """UPDATE log_channels SET leaveid = ? WHERE guildid = ?"""
+        log_name = 'Leave'
+    elif log_type == 'delete':
+        sql = """UPDATE log_channels SET deleteid = ? WHERE guildid = ?"""
+        log_name = 'Delete'
+    elif log_type == 'bulk_delete':
+        sql = """UPDATE log_channels SET delete_bulk = ? WHERE guildid = ?"""
+        log_name = 'Bulk Delete'
+    elif log_type == 'edit':
+        sql = """UPDATE log_channels SET edit = ? WHERE guildid = ?"""
+        log_name = 'Edit'
+    elif log_type == 'username':
+        sql = """UPDATE log_channels SET username = ? WHERE guildid = ?"""
+        log_name = 'Username'
+    elif log_type == 'nickname':
+        sql = """UPDATE log_channels SET nickname = ? WHERE guildid = ?"""
+        log_name = 'Nickname'
+    elif log_type == 'avatar':
+        sql = """UPDATE log_channels SET avatar = ? WHERE guildid = ?"""
+        log_name = 'Avatar'
+    elif log_type == 'stats':
+        sql = """UPDATE log_channels SET stat_member = ? WHERE guildid = ?"""
+        log_name = 'Stats'
+    if len(log_name) == 0:
+        await ctx.send(
+            'Incorrect log type. Please use one of the following. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
     else:
-        log_renamed = log_name
-    valid_logs = ['joinid', 'leaveid', 'deleteid', 'delete_bulk', 'edit', 'username', 'nickname', 'avatar',
-                  'stat_member']
-    if log_renamed in valid_logs:
         await ctx.send(f'Disabled {log_name} logs.')
-        update_guild(ctx.guild.id, log_renamed, 0)
-    else:
-        await ctx.send('Incorrect log type. Please use one of the following. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
+        task = (0, ctx.guild.id)
+        c.execute(sql, task)
+        conn.commit()
 
 
 @bot.event
@@ -323,9 +356,9 @@ async def on_member_remove(member):
         time_on_server = datetime.utcnow() - member.joined_at
         embed = discord.Embed(title=f'**User Left**',
                               description=f'''Name: {member.mention}
-Created on: {member.created_at.strftime(format_date)}
-Account age: {account_age.days} days old
-Joined on: {member.joined_at.strftime(format_date)} ({time_on_server.days} days ago)''',
+**Created on:** {member.created_at.strftime(format_date)}
+**Account age:** {account_age.days} days old
+**Joined on:** {member.joined_at.strftime(format_date)} ({time_on_server.days} days ago)''',
                               color=0xd90000)
         embed.set_author(name=f'{member.name}#{member.discriminator} ({member.id})')
         embed.set_thumbnail(url=member.avatar_url)
@@ -529,5 +562,5 @@ Full message dump attached below.''',
         pass
 
 
-with open("token", "r") as f:
+with open("tokenlive", "r") as f:
     bot.run(f.readline().strip())
