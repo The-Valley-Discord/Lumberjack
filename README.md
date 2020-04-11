@@ -4,10 +4,6 @@ To run you need python and discord.py
 
 https://github.com/Rapptz/discord.py
 
-You will also need to install pandas
-
-https://pandas.pydata.org/pandas-docs/stable/getting_started/install.html
-
 Add your bot token to the empty token file and you are ready to launch the bot
 
 once launched to change the logging channels use
