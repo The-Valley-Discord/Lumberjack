@@ -3,7 +3,7 @@ from datetime import datetime
 from discord.ext import commands
 import sqlite3
 
-bot = commands.Bot(command_prefix='bum.')
+bot = commands.Bot(command_prefix='lum.')
 before_invites = []
 
 conn = sqlite3.connect('log.db')
@@ -562,5 +562,5 @@ Full message dump attached below.''',
         pass
 
 
-with open("tokenlive", "r") as f:
+with open("token", "r") as f:
     bot.run(f.readline().strip())
