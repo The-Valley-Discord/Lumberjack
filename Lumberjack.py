@@ -529,5 +529,5 @@ Full message dump attached below.''',
         pass
 
 
-with open("tokenlive", "r") as f:
+with open("token", "r") as f:
     bot.run(f.readline().strip())
