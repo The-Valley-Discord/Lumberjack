@@ -165,16 +165,21 @@ async def on_message(message):
         pass
     else:
         end_time = datetime.strptime(tracker[4], '%Y-%m-%d %H:%M:%S.%f')
+        channel = bot.get_channel(tracker[3])
         if end_time < datetime.utcnow():
             remove_tracker(conn, tracked)
+            embed = discord.Embed(title=f'**Tracker Expired**',
+                                  description=f'''**Tracker on {message.author.name} has expired**''',
+                                  color=0xFFF1D7)
+            await channel.send(embed=embed)
         else:
-            channel = bot.get_channel(tracker[3])
             embed = discord.Embed(title=f'**Tracked User Message in {message.channel.name}**',
-                                  description=f'''**{message.channel.mention} ({message.channel.id})**''',
-                                    color=0xFFF1D7)
+                                  description=f'''**{message.channel.mention} ({message.channel.id})
+[Jump Url]({message.jump_url})**''',
+                                    color=0xFFF1D7,)
             embed.set_author(name=f'{tracker[1]}({tracker[0]})')
             embed.set_thumbnail(url=message.author.avatar_url)
-            embed.set_footer(text=f'Tracer set by {tracker[6]} ({tracker[5]})')
+            embed.set_footer(text=f'Tracer set by {tracker[6]} ({tracker[5]})\n Message sent')
             embed.timestamp = datetime.utcnow()
             if 0 < len(message.clean_content) <= 1024:
                 embed.add_field(name='**Message Content**',
@@ -581,7 +586,8 @@ async def on_raw_message_edit(payload):
             embed = discord.Embed(title=F"**Message edited in #{after.channel}**",
                                   description=F'''**Author:** <@!{after.author.id}>
 **Channel:** <#{after.channel.id}> ({after.channel.id})
-**Message ID:** {after.id}''',
+**Message ID:** {after.id}
+[Jump Url]({message.jump_url})''',
                                   color=0xffc704)
             embed.set_author(name=f'{after.author.name}#{after.author.discriminator} ({after.author.id})')
             if len(before[7]) == 0:
@@ -698,5 +704,5 @@ Full message dump attached below.''',
         pass
 
 
-with open("tokenbeta", "r") as f:
+with open("token", "r") as f:
     bot.run(f.readline().strip())
