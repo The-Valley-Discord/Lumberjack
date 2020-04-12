@@ -1,5 +1,5 @@
 import discord
-from datetime import datetime
+from datetime import datetime, timedelta
 from discord.ext import commands
 import sqlite3
 
@@ -28,7 +28,7 @@ c.execute(""" CREATE TABLE IF NOT EXISTS attachment_urls (
             attachment text
             ) """)
 c.execute(""" CREATE TABLE IF NOT EXISTS log_channels (
-            guildid Primary Key,
+            guildid integer Primary Key,
             joinid integer,
             leaveid integer,
             deleteid integer,
@@ -38,6 +38,15 @@ c.execute(""" CREATE TABLE IF NOT EXISTS log_channels (
             nickname integer,
             avatar integer,
             stat_member integer
+            ) """)
+c.execute(""" CREATE TABLE IF NOT EXISTS tracking (
+            userid integer Primary Key,
+            username text,
+            guildid integer,
+            channelid integer,
+            endtime timestamp,
+            modid integer,
+            modname text
             ) """)
 
 
@@ -55,32 +64,8 @@ def add_message(conn, intmessage):
     return c.lastrowid
 
 
-def add_guild(conn, intguild):
-    """
-    Create a new project into the projects table
-    :param intguild:
-    :param conn:
-    :return: message id
-    """
-    sql = '''INSERT INTO log_channels (guildid,joinid,leaveid,deleteid,delete_bulk,edit,username,nickname,
-    avatar,stat_member) VALUES(?,?,?,?,?,?,?,?,?,?) '''
-    c.execute(sql, intguild)
-    conn.commit()
-    return c.lastrowid
-
-
 def get_msg_by_id(id):
     c.execute("SELECT * FROM messages WHERE id=:id", {"id": id})
-    return c.fetchone()
-
-
-def get_att_by_id(id):
-    c.execute("SELECT * FROM attachment_urls WHERE message_id=:id", {"id": id})
-    return c.fetchall()
-
-
-def get_log_by_id(id):
-    c.execute("SELECT * FROM log_channels WHERE guildid=:id", {"id": id})
     return c.fetchone()
 
 
@@ -91,10 +76,59 @@ def update_msg(id, content):
                   {'id': id, 'clean_content': content})
 
 
+def get_att_by_id(id):
+    c.execute("SELECT * FROM attachment_urls WHERE message_id=:id", {"id": id})
+    return c.fetchall()
+
+
+def add_guild(conn, intguild):
+    """
+    Create a new project into the projects table
+    :param intguild:
+    :param conn:
+    :return: guild id
+    """
+    sql = '''INSERT INTO log_channels (guildid,joinid,leaveid,deleteid,delete_bulk,edit,username,nickname,
+    avatar,stat_member) VALUES(?,?,?,?,?,?,?,?,?,?) '''
+    c.execute(sql, intguild)
+    conn.commit()
+    return c.lastrowid
+
+
+def get_log_by_id(id):
+    c.execute("SELECT * FROM log_channels WHERE guildid=:id", {"id": id})
+    return c.fetchone()
+
+
+def add_tracker(conn, inttracker):
+    """
+    Create a new project into the projects table
+    :param inttracker:
+    :param conn:
+    :return: user id
+    """
+    sql = '''INSERT INTO tracking (userid,username,guildid,channelid,endtime,modid,modname) 
+    VALUES(?,?,?,?,?,?,?) '''
+    c.execute(sql, inttracker)
+    conn.commit()
+    return c.lastrowid
+
+def get_tracked_by_id(conn, tracked):
+    sql = '''SELECT * FROM tracking WHERE guildid=? AND userid=?'''
+    c.execute(sql, tracked)
+    conn.commit
+    return c.fetchone()
+
+def remove_tracker(conn, inttracker):
+    sql = """DELETE from tracking WHERE guildid = ? AND userid = ?"""
+    c.execute(sql, inttracker)
+    conn.commit()
+    return c.lastrowid
+
+
 def has_permissions():
     def predicate(ctx):
         return ctx.author.guild_permissions.manage_guild is True
-
     return commands.check(predicate)
 
 
@@ -115,6 +149,16 @@ async def on_message(message):
         for attachment in attachments:
             c.execute("INSERT INTO attachment_urls VALUES (:message_id, :attachment)",
                       {'message_id': message.id, 'attachment': attachment})
+    tracked = (message.guild.id, message.author.id)
+    tracker = get_tracked_by_id(conn, tracked)
+    if tracker is None:
+        pass
+    else:
+        if tracker[4] < datetime.utcnow():
+            remove_tracker(conn, tracked)
+        else:
+            channel = bot.get_channel(tracker[3])
+            await channel.send(content=message.clean_content)
     await bot.process_commands(message)
 
 
@@ -205,6 +249,7 @@ async def log(ctx, arg1, arg2):
         c.execute(sql, task)
         conn.commit()
 
+
 @bot.command()
 @commands.check_any(has_permissions())
 async def clear(ctx, arg1):
@@ -271,6 +316,57 @@ async def ping(ctx):
     embed = discord.Embed(title='**Ping**', description=f'Pong! {round(bot.latency * 1000)}ms')
     embed.set_author(name=f"{bot.user.name}", icon_url=bot.user.avatar_url)
     await ctx.send(embed=embed)
+
+
+@bot.command()
+@commands.check_any(has_permissions())
+async def track(ctx, user, time, channel):
+    strip = ['<', '>', '#', '@', '!']
+    str_channel = channel.lower()
+    str_user = user.lower()
+    tracking_time = 0
+    for item in strip:
+        str_channel = str_channel.strip(item)
+        str_user = str_user.strip(item)
+    if time[-1].lower() == 'd':
+        timelimit = timedelta(days=int(time[:-1]))
+        tracking_time = datetime.utcnow() + timelimit
+    elif time[-1].lower() == 'h':
+        timelimit = timedelta(hours=int(time[:-1]))
+        tracking_time = datetime.utcnow() + timelimit
+    else:
+        pass
+    user = await bot.fetch_user(int(str_user))
+    channel = bot.get_channel(int(str_channel))
+    if user is None:
+        await ctx.send(f'A Valid User was not entered\nFormat is lum.track (user mention/id) (time in d or h) (log channel mention/id)')
+    elif channel is None:
+        await ctx.send(f'A valid Channel was not entered\nFormat is lum.track (user mention/id) (time in d or h) (log channel mention/id)')
+        await ctx.send (f'{str_channel}')
+    else:
+        username = f'{user.name}#{user.discriminator}'
+        modname = f'{ctx.author.name}#{ctx.author.discriminator}'
+        inttracker = (user.id, username, ctx.guild.id, channel.id, tracking_time, ctx.author.id, modname)
+        add_tracker(conn, inttracker)
+        await ctx.send(f'A Tracker has been placed on {username}')
+
+
+@bot.command()
+@commands.check_any(has_permissions())
+async def untrack(ctx, user):
+    strip = ['<', '>', '#', '@', '!']
+    str_user = user
+    for item in strip:
+        str_user = str_user.strip(item)
+    user = await bot.fetch_user(int(str_user))
+    if user is None:
+        await ctx.send(
+            f'A Valid User was not entered\nFormat is lum.untrack (user mention/id)')
+    else:
+        inttracker = (ctx.guild.id, user.id)
+        username = f'{user.name}#{user.discriminator}'
+        remove_tracker(conn, inttracker)
+        await ctx.send(f'{username} is no longer being tracked')
 
 
 format_date = '%b %d, %Y'
@@ -355,7 +451,7 @@ async def on_member_remove(member):
         account_age = datetime.utcnow() - member.created_at
         time_on_server = datetime.utcnow() - member.joined_at
         embed = discord.Embed(title=f'**User Left**',
-                              description=f'''Name: {member.mention}
+                              description=f'''**Name:** {member.mention}
 **Created on:** {member.created_at.strftime(format_date)}
 **Account age:** {account_age.days} days old
 **Joined on:** {member.joined_at.strftime(format_date)} ({time_on_server.days} days ago)''',
@@ -562,5 +658,5 @@ Full message dump attached below.''',
         pass
 
 
-with open("token", "r") as f:
+with open("tokenbeta", "r") as f:
     bot.run(f.readline().strip())
