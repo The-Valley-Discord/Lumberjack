@@ -1,7 +1,10 @@
-import discord
-from datetime import datetime, timedelta
-from discord.ext import commands
+# TODO: Delete this file when move to cogs is complete
+
 import sqlite3
+from datetime import datetime, timedelta
+
+import discord
+from discord.ext import commands
 
 bot = commands.Bot(command_prefix='lum.')
 before_invites = []
@@ -10,350 +13,8 @@ conn = sqlite3.connect('log.db')
 
 c = conn.cursor()
 
-c.execute(""" CREATE TABLE IF NOT EXISTS messages (
-            id integer PRIMARY KEY,
-            author integer NOT NULL,
-            authorname text,
-            authordisplayname text,
-            channelid integer,
-            channelname text,
-            guildid integer,
-            clean_content text,
-            created_at timestamp,
-            pfp text,
-            attachments integer
-            ) """)
-c.execute(""" CREATE TABLE IF NOT EXISTS attachment_urls (
-            message_id integer,
-            attachment text
-            ) """)
-c.execute(""" CREATE TABLE IF NOT EXISTS log_channels (
-            guildid integer Primary Key,
-            joinid integer,
-            leaveid integer,
-            deleteid integer,
-            delete_bulk integer,
-            edit integer,
-            username integer,
-            nickname integer,
-            avatar integer,
-            stat_member integer
-            ) """)
-c.execute(""" CREATE TABLE IF NOT EXISTS tracking (
-            userid integer Primary Key,
-            username text,
-            guildid integer,
-            channelid integer,
-            endtime timestamp,
-            modid integer,
-            modname text
-            ) """)
 
-
-def add_message(conn, intmessage):
-    """
-    Create a new project into the projects table
-    :param intmessage:
-    :param conn:
-    :return: message id
-    """
-    sql = '''INSERT INTO messages (id,author,authorname,authordisplayname,channelid,channelname,guildid,
-    clean_content,created_at,pfp,attachments) VALUES(?,?,?,?,?,?,?,?,?,?,?) '''
-    c.execute(sql, intmessage)
-    conn.commit()
-    return c.lastrowid
-
-
-def get_msg_by_id(id):
-    c.execute("SELECT * FROM messages WHERE id=:id", {"id": id})
-    return c.fetchone()
-
-
-def update_msg(id, content):
-    with conn:
-        c.execute("""UPDATE messages SET clean_content = :clean_content
-                    WHERE id = :id""",
-                  {'id': id, 'clean_content': content})
-
-
-def get_att_by_id(id):
-    c.execute("SELECT * FROM attachment_urls WHERE message_id=:id", {"id": id})
-    return c.fetchall()
-
-
-def add_guild(conn, intguild):
-    """
-    Create a new project into the projects table
-    :param intguild:
-    :param conn:
-    :return: guild id
-    """
-    sql = '''INSERT INTO log_channels (guildid,joinid,leaveid,deleteid,delete_bulk,edit,username,nickname,
-    avatar,stat_member) VALUES(?,?,?,?,?,?,?,?,?,?) '''
-    c.execute(sql, intguild)
-    conn.commit()
-    return c.lastrowid
-
-
-def get_log_by_id(id):
-    c.execute("SELECT * FROM log_channels WHERE guildid=:id", {"id": id})
-    return c.fetchone()
-
-
-def get_tracked_by_id(conn, tracked):
-    sql = '''SELECT * FROM tracking WHERE guildid=? AND userid=?'''
-    c.execute(sql, tracked)
-    conn.commit
-    return c.fetchone()
-
-
-def add_tracker(conn, inttracker):
-    tracked = (inttracker[2], inttracker[0])
-    tracker_check = get_tracked_by_id(conn, tracked)
-    if tracker_check is None:
-        sql = '''INSERT INTO tracking (userid,username,guildid,channelid,endtime,modid,modname) 
-        VALUES(?,?,?,?,?,?,?) '''
-        c.execute(sql, inttracker)
-        conn.commit()
-    else:
-        c.execute("""UPDATE tracking SET endtime = :endtime,
-                             modid = :modid,
-                             modname = :modname
-                            WHERE userid = :userid
-                            AND guildid = :guildid""",
-                  {'endtime': inttracker[4],
-                   'modid': inttracker[5],
-                   'modname': inttracker[6],
-                   'userid': inttracker[0],
-                   'guildid': inttracker[2]})
-    return c.lastrowid
-
-
-def remove_tracker(conn, inttracker):
-    sql = """DELETE from tracking WHERE guildid = ? AND userid = ?"""
-    c.execute(sql, inttracker)
-    conn.commit()
-    return c.lastrowid
-
-
-def has_permissions():
-    def predicate(ctx):
-        return ctx.author.guild_permissions.manage_guild is True
-    return commands.check(predicate)
-
-
-@bot.event
-async def on_message(message):
-    attachments = [f"{attachment.proxy_url}" for attachment in message.attachments]
-    author = f'{message.author.name}#{message.author.discriminator}'
-    avatar_url = f'{message.author.avatar_url}'
-    attachment_bool = False
-    if len(attachments) > 0:
-        attachment_bool = True
-    mymessage = (
-        message.id, message.author.id, author, message.author.display_name, message.channel.id, message.channel.name,
-        message.guild.id,
-        message.clean_content, message.created_at, avatar_url, attachment_bool)
-    add_message(conn, mymessage)
-    if attachment_bool:
-        for attachment in attachments:
-            c.execute("INSERT INTO attachment_urls VALUES (:message_id, :attachment)",
-                      {'message_id': message.id, 'attachment': attachment})
-    tracked = (message.guild.id, message.author.id)
-    tracker = get_tracked_by_id(conn, tracked)
-    if tracker is None:
-        pass
-    else:
-        end_time = datetime.strptime(tracker[4], '%Y-%m-%d %H:%M:%S.%f')
-        if end_time < datetime.utcnow():
-            remove_tracker(conn, tracked)
-        else:
-            channel = bot.get_channel(tracker[3])
-            embed = discord.Embed(title=f'**Tracked User Message in {message.channel.name}**',
-                                  description=f'''**{message.channel.mention} ({message.channel.id})**''',
-                                    color=0xFFF1D7)
-            embed.set_author(name=f'{tracker[1]}({tracker[0]})')
-            embed.set_thumbnail(url=message.author.avatar_url)
-            embed.set_footer(text=f'Tracer set by {tracker[6]} ({tracker[5]})')
-            embed.timestamp = datetime.utcnow()
-            if 0 < len(message.clean_content) <= 1024:
-                embed.add_field(name='**Message Content**',
-                                value=f'{message.clean_content}',
-                                inline=False)
-            elif len(message.clean_content) >1024:
-                prts = message.clean_content
-                prt_1 = prts[:1024]
-                prt_2 = prts[1024:]
-                embed.add_field(name=f'**Content**', value=f'{prt_1}', inline=False)
-                embed.add_field(name=f'Continued', value=f'{prt_2}')
-            else:
-                pass
-            if len(attachments) > 0:
-                attachments_str = " ".join(attachments)
-                embed.add_field(name=f'**Attachments**', value=f'{attachments_str}', inline=False)
-                embed.set_image(url=attachments[0])
-            else:
-                pass
-            await channel.send(embed=embed)
-    await bot.process_commands(message)
-
-
-@bot.event
-async def on_ready():
-    await bot.change_presence(
-        activity=discord.Activity(type=discord.ActivityType.watching, name="with ten thousand eyes."))
-    for guild in bot.guilds:
-        gld = get_log_by_id(guild.id)
-        if gld is None:
-            newguild = (guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-            add_guild(conn, newguild)
-        else:
-            pass
-        for invite in await guild.invites():
-            x = [invite.url, invite.uses, invite.inviter]
-            before_invites.append(x)
-    print('Bot is ready.')
-
-
-@bot.event
-async def on_guild_join(guild):
-    for invite in await guild.invites():
-        x = [invite.url, invite.uses, invite.inviter]
-        before_invites.append(x)
-        gld = get_log_by_id(guild.id)
-        if gld is None:
-            newguild = (guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-            add_guild(conn, newguild)
-        else:
-            pass
-
-
-@bot.command()
-@commands.check_any(has_permissions())
-async def log(ctx, arg1, arg2):
-    log_name = ''
-    channel_id = 0
-    strip = ['<', '>', '#']
-    str_channel = arg2.lower()
-    log_type = arg1.lower()
-    for item in strip:
-        str_channel = str_channel.strip(item)
-    if str_channel == 'here':
-        channel_id = ctx.channel.id
-    else:
-        channel_id = int(str_channel)
-    logs = bot.get_channel(channel_id)
-    if log_type == 'join':
-        sql = """UPDATE log_channels SET joinid = ? WHERE guildid = ?"""
-        log_name = 'Join'
-    elif log_type == 'leave':
-        sql = """UPDATE log_channels SET leaveid = ? WHERE guildid = ?"""
-        log_name = 'Leave'
-    elif log_type == 'delete':
-        sql = """UPDATE log_channels SET deleteid = ? WHERE guildid = ?"""
-        log_name = 'Delete'
-    elif log_type == 'bulk_delete':
-        sql = """UPDATE log_channels SET delete_bulk = ? WHERE guildid = ?"""
-        log_name = 'Bulk Delete'
-    elif log_type == 'edit':
-        sql = """UPDATE log_channels SET edit = ? WHERE guildid = ?"""
-        log_name = 'Edit'
-    elif log_type == 'username':
-        sql = """UPDATE log_channels SET username = ? WHERE guildid = ?"""
-        log_name = 'Username'
-    elif log_type == 'nickname':
-        sql = """UPDATE log_channels SET nickname = ? WHERE guildid = ?"""
-        log_name = 'Nickname'
-    elif log_type == 'avatar':
-        sql = """UPDATE log_channels SET avatar = ? WHERE guildid = ?"""
-        log_name = 'Avatar'
-    elif log_type == 'stats':
-        sql = """UPDATE log_channels SET stat_member = ? WHERE guildid = ?"""
-        log_name = 'Stats'
-        if logs is None:
-            pass
-        else:
-            await logs.edit(name=f'Members: {logs.guild.member_count}')
-    if len(log_name) == 0:
-        await ctx.send(
-            'Incorrect log type. Please use one of the following. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
-    elif logs is None:
-        await ctx.send('Invalid channel ID')
-    else:
-        await ctx.send(f'Updated {log_name} Log Channel to {logs.mention}')
-        task = (logs.id, ctx.guild.id)
-        c.execute(sql, task)
-        conn.commit()
-
-
-@bot.command()
-@commands.check_any(has_permissions())
-async def clear(ctx, arg1):
-    log_type = arg1.lower()
-    log_name = ''
-    if log_type == 'join':
-        sql = """UPDATE log_channels SET joinid = ? WHERE guildid = ?"""
-        log_name = 'Join'
-    elif log_type == 'leave':
-        sql = """UPDATE log_channels SET leaveid = ? WHERE guildid = ?"""
-        log_name = 'Leave'
-    elif log_type == 'delete':
-        sql = """UPDATE log_channels SET deleteid = ? WHERE guildid = ?"""
-        log_name = 'Delete'
-    elif log_type == 'bulk_delete':
-        sql = """UPDATE log_channels SET delete_bulk = ? WHERE guildid = ?"""
-        log_name = 'Bulk Delete'
-    elif log_type == 'edit':
-        sql = """UPDATE log_channels SET edit = ? WHERE guildid = ?"""
-        log_name = 'Edit'
-    elif log_type == 'username':
-        sql = """UPDATE log_channels SET username = ? WHERE guildid = ?"""
-        log_name = 'Username'
-    elif log_type == 'nickname':
-        sql = """UPDATE log_channels SET nickname = ? WHERE guildid = ?"""
-        log_name = 'Nickname'
-    elif log_type == 'avatar':
-        sql = """UPDATE log_channels SET avatar = ? WHERE guildid = ?"""
-        log_name = 'Avatar'
-    elif log_type == 'stats':
-        sql = """UPDATE log_channels SET stat_member = ? WHERE guildid = ?"""
-        log_name = 'Stats'
-    if len(log_name) == 0:
-        await ctx.send(
-            'Incorrect log type. Please use one of the following. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats')
-    else:
-        await ctx.send(f'Disabled {log_name} logs.')
-        task = (0, ctx.guild.id)
-        c.execute(sql, task)
-        conn.commit()
-
-
-@bot.event
-async def on_guild_remove(guild):
-    for invite in await guild.invites():
-        x = [invite.url, invite.uses, invite.inviter]
-        before_invites.remove(x)
-
-
-@bot.event
-async def on_invite_create(invite):
-    x = [invite.url, invite.uses, invite.inviter]
-    before_invites.append(x)
-
-
-@bot.event
-async def on_invite_delete(invite):
-    x = [invite.url, invite.uses, invite.inviter]
-    before_invites.remove(x)
-
-
-@bot.command()
-async def ping(ctx):
-    embed = discord.Embed(title='**Ping**', description=f'Pong! {round(bot.latency * 1000)}ms')
-    embed.set_author(name=f"{bot.user.name}", icon_url=bot.user.avatar_url)
-    await ctx.send(embed=embed)
-
-
+# TODO: This moves into lumberjack.tracker.Tracker
 @bot.command()
 @commands.check_any(has_permissions())
 async def track(ctx, user, time, channel):
@@ -390,6 +51,7 @@ async def track(ctx, user, time, channel):
         await ctx.send(f'A Tracker has been placed on {username} for {time}')
 
 
+# TODO: This moves into lumberjack.tracker.Tracker
 @bot.command()
 @commands.check_any(has_permissions())
 async def untrack(ctx, user):
@@ -414,7 +76,7 @@ format_datetime = '%b %d, %Y  %I:%M %p'
 
 
 # member join event
-
+# TODO: This moves into lumberjack.logger.Logger
 @bot.event
 async def on_member_join(member):
     gld = get_log_by_id(member.guild.id)
@@ -479,7 +141,7 @@ async def on_member_join(member):
 
 
 # member leave event
-
+# TODO: This moves into lumberjack.logger.Logger
 @bot.event
 async def on_member_remove(member):
     gld = get_log_by_id(member.guild.id)
@@ -515,7 +177,7 @@ async def on_member_remove(member):
 
 # message delete event
 
-
+# TODO: This moves into lumberjack.logger.Logger
 @bot.event
 async def on_raw_message_delete(payload):
     gld = get_log_by_id(payload.guild_id)
@@ -561,7 +223,7 @@ async def on_raw_message_delete(payload):
 
 
 # message edit event
-
+# TODO: This moves into lumberjack.logger.Logger
 @bot.event
 async def on_raw_message_edit(payload):
     channel = bot.get_channel(payload.channel_id)
@@ -611,7 +273,7 @@ async def on_raw_message_edit(payload):
 
 
 # member update event (nickname, roles, activity, status)
-
+# TODO: This moves into lumberjack.logger.Logger
 @bot.event
 async def on_member_update(before, after):
     gld = get_log_by_id(after.guild.id)
@@ -634,7 +296,7 @@ async def on_member_update(before, after):
 
 
 # user update event (avatar, username, discriminator)
-
+# TODO: This moves into lumberjack.logger.Logger
 @bot.event
 async def on_user_update(before, after):
     for guild in bot.guilds:
@@ -672,6 +334,7 @@ Old avatar in thumbnail. New avatar down below''',
                     await logs.send(embed=embed)
 
 
+# TODO: This moves into lumberjack.logger.Logger
 @bot.event
 async def on_raw_bulk_message_delete(payload):
     messages = []
@@ -698,5 +361,6 @@ Full message dump attached below.''',
         pass
 
 
+# TODO: This moves into lumberjack.__init__
 with open("tokenbeta", "r") as f:
     bot.run(f.readline().strip())
