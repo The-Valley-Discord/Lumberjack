@@ -23,7 +23,15 @@ Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats
 
 Stats is used a a membercounter. It updates the selected channel's name with the current number of members on the server.
 
+to track a specific users messages use 
+
+lum.track (user mention/id) (time in D, H, M) (log channel mention/id)
+
 The bot will need send message and send embed permissions in the logging channel.
+
 The bot will need read permissions of any channel you want logged.
+
 The bot will need manage guild and manage channels to track which invite was used on join.
+
 the bot will need manage channels for the member stats tracker.
+

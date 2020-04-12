@@ -100,24 +100,34 @@ def get_log_by_id(id):
     return c.fetchone()
 
 
-def add_tracker(conn, inttracker):
-    """
-    Create a new project into the projects table
-    :param inttracker:
-    :param conn:
-    :return: user id
-    """
-    sql = '''INSERT INTO tracking (userid,username,guildid,channelid,endtime,modid,modname) 
-    VALUES(?,?,?,?,?,?,?) '''
-    c.execute(sql, inttracker)
-    conn.commit()
-    return c.lastrowid
-
 def get_tracked_by_id(conn, tracked):
     sql = '''SELECT * FROM tracking WHERE guildid=? AND userid=?'''
     c.execute(sql, tracked)
     conn.commit
     return c.fetchone()
+
+
+def add_tracker(conn, inttracker):
+    tracked = (inttracker[2], inttracker[0])
+    tracker_check = get_tracked_by_id(conn, tracked)
+    if tracker_check is None:
+        sql = '''INSERT INTO tracking (userid,username,guildid,channelid,endtime,modid,modname) 
+        VALUES(?,?,?,?,?,?,?) '''
+        c.execute(sql, inttracker)
+        conn.commit()
+    else:
+        c.execute("""UPDATE tracking SET endtime = :endtime,
+                             modid = :modid,
+                             modname = :modname
+                            WHERE userid = :userid
+                            AND guildid = :guildid""",
+                  {'endtime': inttracker[4],
+                   'modid': inttracker[5],
+                   'modname': inttracker[6],
+                   'userid': inttracker[0],
+                   'guildid': inttracker[2]})
+    return c.lastrowid
+
 
 def remove_tracker(conn, inttracker):
     sql = """DELETE from tracking WHERE guildid = ? AND userid = ?"""
@@ -154,11 +164,37 @@ async def on_message(message):
     if tracker is None:
         pass
     else:
-        if tracker[4] < datetime.utcnow():
+        end_time = datetime.strptime(tracker[4], '%Y-%m-%d %H:%M:%S.%f')
+        if end_time < datetime.utcnow():
             remove_tracker(conn, tracked)
         else:
             channel = bot.get_channel(tracker[3])
-            await channel.send(content=message.clean_content)
+            embed = discord.Embed(title=f'**Tracked User Message in {message.channel.name}**',
+                                  description=f'''**{message.channel.mention} ({message.channel.id})**''',
+                                    color=0xFFF1D7)
+            embed.set_author(name=f'{tracker[1]}({tracker[0]})')
+            embed.set_thumbnail(url=message.author.avatar_url)
+            embed.set_footer(text=f'Tracer set by {tracker[6]} ({tracker[5]})')
+            embed.timestamp = datetime.utcnow()
+            if 0 < len(message.clean_content) <= 1024:
+                embed.add_field(name='**Message Content**',
+                                value=f'{message.clean_content}',
+                                inline=False)
+            elif len(message.clean_content) >1024:
+                prts = message.clean_content
+                prt_1 = prts[:1024]
+                prt_2 = prts[1024:]
+                embed.add_field(name=f'**Content**', value=f'{prt_1}', inline=False)
+                embed.add_field(name=f'Continued', value=f'{prt_2}')
+            else:
+                pass
+            if len(attachments) > 0:
+                attachments_str = " ".join(attachments)
+                embed.add_field(name=f'**Attachments**', value=f'{attachments_str}', inline=False)
+                embed.set_image(url=attachments[0])
+            else:
+                pass
+            await channel.send(embed=embed)
     await bot.process_commands(message)
 
 
@@ -334,6 +370,9 @@ async def track(ctx, user, time, channel):
     elif time[-1].lower() == 'h':
         timelimit = timedelta(hours=int(time[:-1]))
         tracking_time = datetime.utcnow() + timelimit
+    elif time[-1].lower() == 'm':
+        timelimit = timedelta(minutes=int(time[:-1]))
+        tracking_time = datetime.utcnow() + timelimit
     else:
         pass
     user = await bot.fetch_user(int(str_user))
@@ -348,7 +387,7 @@ async def track(ctx, user, time, channel):
         modname = f'{ctx.author.name}#{ctx.author.discriminator}'
         inttracker = (user.id, username, ctx.guild.id, channel.id, tracking_time, ctx.author.id, modname)
         add_tracker(conn, inttracker)
-        await ctx.send(f'A Tracker has been placed on {username}')
+        await ctx.send(f'A Tracker has been placed on {username} for {time}')
 
 
 @bot.command()
@@ -513,6 +552,7 @@ async def on_raw_message_delete(payload):
         else:
             attachments_str = " ".join(attachments)
             embed.add_field(name=f'**Attachments**', value=f'{attachments_str}', inline=False)
+            embed.set_image(url=attachments[0])
         embed.set_author(name=f'{author.name}#{author.discriminator} ({author.id})')
         embed.set_thumbnail(url=author.avatar_url)
         embed.set_footer(text=f'')
