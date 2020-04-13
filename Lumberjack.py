@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from discord.ext import commands
 import sqlite3
 
-bot = commands.Bot(command_prefix="bum.")
+bot = commands.Bot(command_prefix="lum.")
 before_invites = []
 format_date = "%b %d, %Y"
 format_time = "%I:%M %p"
@@ -56,13 +56,10 @@ c.execute(
             channelid integer,
             endtime timestamp,
             modid integer,
-            modname text
+            modname text,
+            ljid integer
             ) """
 )
-# c.execute(""" ALTER TABLE log_channels
-#           ADD COLUMN ljid integer
-#            """)
-#
 
 
 def add_message(conn, intmessage):
@@ -512,8 +509,8 @@ async def on_member_join(member):
             if before_invite == after_invite:
                 pass
             elif (
-                before_invite[0] == after_invite[0]
-                and before_invite[1] != after_invite[1]
+                    before_invite[0] == after_invite[0]
+                    and before_invite[1] != after_invite[1]
             ):
                 invite_used = after_invite[0]
                 invite_uses = f"({after_invite[1]} uses)"
