@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from discord.ext import commands
 import sqlite3
 
-bot = commands.Bot(command_prefix='lum.')
+bot = commands.Bot(command_prefix='bum.')
 before_invites = []
 
 conn = sqlite3.connect('log.db')
@@ -169,13 +169,12 @@ async def on_message(message):
         if end_time < datetime.utcnow():
             remove_tracker(conn, tracked)
             embed = discord.Embed(title=f'**Tracker Expired**',
-                                  description=f'''**Tracker on {message.author.name} has expired**''',
+                                  description=f'''**Tracker on {tracker[1]} has expired**''',
                                   color=0xFFF1D7)
             await channel.send(embed=embed)
         else:
-            embed = discord.Embed(title=f'**Tracked User Message in {message.channel.name}**',
-                                  description=f'''**{message.channel.mention} ({message.channel.id})
-[Jump Url]({message.jump_url})**''',
+            embed = discord.Embed(title=f'**Tracked User Message in #{message.channel.name}**',
+                                  description=f'''**[Jump Url]({message.jump_url})**''',
                                     color=0xFFF1D7,)
             embed.set_author(name=f'{tracker[1]}({tracker[0]})')
             embed.set_thumbnail(url=message.author.avatar_url)
@@ -380,13 +379,18 @@ async def track(ctx, user, time, channel):
         tracking_time = datetime.utcnow() + timelimit
     else:
         pass
-    user = await bot.fetch_user(int(str_user))
+    user = ctx.guild.get_member(int(str_user))
     channel = bot.get_channel(int(str_channel))
     if user is None:
         await ctx.send(f'A Valid User was not entered\nFormat is lum.track (user mention/id) (time in d or h) (log channel mention/id)')
+    elif user.guild_permissions.manage_guild:
+        await ctx.send(
+            f'<\_<    >\_>     I can\'t track a mod.\n Try someone else')
     elif channel is None:
         await ctx.send(f'A valid Channel was not entered\nFormat is lum.track (user mention/id) (time in d or h) (log channel mention/id)')
-        await ctx.send (f'{str_channel}')
+    elif channel.guild != ctx.guild:
+        await ctx.send(
+            f'<\_<    >\_>     That channel is not on this server.\n Try a different one.')
     else:
         username = f'{user.name}#{user.discriminator}'
         modname = f'{ctx.author.name}#{ctx.author.discriminator}'
@@ -402,7 +406,7 @@ async def untrack(ctx, user):
     str_user = user
     for item in strip:
         str_user = str_user.strip(item)
-    user = await bot.fetch_user(int(str_user))
+    user = ctx.guild.get_member(int(str_user))
     if user is None:
         await ctx.send(
             f'A Valid User was not entered\nFormat is lum.untrack (user mention/id)')
@@ -528,7 +532,7 @@ async def on_raw_message_delete(payload):
     channel = bot.get_channel(payload.channel_id)
     msg = get_msg_by_id(payload.message_id)
     att = get_att_by_id(payload.message_id)
-    author = await bot.fetch_user(msg[1])
+    author = channel.guild.get_member(msg[1])
     attachments = []
     for attachment in att:
         attachments.append(attachment[1])
@@ -587,7 +591,7 @@ async def on_raw_message_edit(payload):
                                   description=F'''**Author:** <@!{after.author.id}>
 **Channel:** <#{after.channel.id}> ({after.channel.id})
 **Message ID:** {after.id}
-[Jump Url]({message.jump_url})''',
+[Jump Url]({after.jump_url})''',
                                   color=0xffc704)
             embed.set_author(name=f'{after.author.name}#{after.author.discriminator} ({after.author.id})')
             if len(before[7]) == 0:
