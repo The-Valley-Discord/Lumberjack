@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from discord.ext import commands
 import sqlite3
 
-bot = commands.Bot(command_prefix="lum.")
+bot = commands.Bot(command_prefix="bum.")
 before_invites = []
 format_date = "%b %d, %Y"
 format_time = "%I:%M %p"
@@ -132,7 +132,7 @@ def add_tracker(conn, inttracker):
         c.execute(
             """UPDATE tracking SET endtime = :endtime,
                              modid = :modid,
-                             modname = :modname
+                             modname = :modname,
                              channelid = :channelid
                             WHERE userid = :userid
                             AND guildid = :guildid""",
@@ -204,10 +204,10 @@ async def on_message(message):
             )
             embed.set_author(name="Tracker Expired")
             embed.timestamp = datetime.utcnow()
-            await channel.send(embed=embed)
             gld = get_log_by_id(message.channel.guild.id)
             logs = bot.get_channel(gld[10])
             await logs.send(embed=embed)
+            await channel.send(embed=embed)
         else:
             prts = message.clean_content
             prt_1 = prts[:1900]
@@ -433,9 +433,9 @@ async def track(ctx, user, time, channel):
             f"A Valid User was not entered\nFormat is lum.track (user mention/id) (time in d or h) (log channel "
             f"mention/id)"
         )
-    # elif user.guild_permissions.manage_guild:
-    # await ctx.send(
-    # f'<\_<\n>\_>\nI can\'t track a mod.\n Try someone else')
+    elif user.guild_permissions.manage_guild:
+        await ctx.send(
+            f'<\_<\n>\_>\nI can\'t track a mod.\n Try someone else')
     elif channel is None:
         await ctx.send(
             f"A valid Channel was not entered\nFormat is lum.track (user mention/id) (time in d or h) (log channel "
@@ -461,7 +461,7 @@ async def track(ctx, user, time, channel):
         logs = bot.get_channel(gld[10])
         add_tracker(conn, inttracker)
         await ctx.send(f"A Tracker has been placed on {username} for {time}")
-        await logs.send(f"{modname} placed a tracker on {username} for {time}")
+        await logs.send(f"{modname} placed a tracker on {user.mention} for {time}")
 
 
 @bot.command()
@@ -613,14 +613,12 @@ async def on_raw_message_delete(payload):
     logs = bot.get_channel(gld[3])
     channel = bot.get_channel(payload.channel_id)
     msg = get_msg_by_id(payload.message_id)
-    att = get_att_by_id(payload.message_id)
     author = channel.guild.get_member(msg[1])
-    attachments = []
-    for attachment in att:
-        attachments.append(attachment[1])
-    if author.bot:
+    if logs is None:
         pass
-    elif logs is None:
+    elif author is None:
+        pass
+    elif author.bot:
         pass
     else:
         embed = discord.Embed(
@@ -631,7 +629,7 @@ async def on_raw_message_delete(payload):
             color=0xD90000,
         )
         if len(msg[7]) == 0:
-            embed.add_field(name=f"**Content**", value="`Blank`", inline=False)
+            pass
         elif len(msg[7]) <= 1024:
             embed.add_field(name=f"**Content**", value=f"{msg[7]}", inline=False)
         else:
@@ -641,8 +639,12 @@ async def on_raw_message_delete(payload):
             embed.add_field(name=f"**Content**", value=f"{prt_1}", inline=False)
             embed.add_field(name=f"Continued", value=f"{prt_2}")
         if not msg[10]:
-            embed.add_field(name=f"**Attachments**", value=f"None", inline=False)
+            pass
         else:
+            att = get_att_by_id(payload.message_id)
+            attachments = []
+            for attachment in att:
+                attachments.append(attachment[1])
             attachments_str = " ".join(attachments)
             embed.add_field(
                 name=f"**Attachments**", value=f"{attachments_str}", inline=False
@@ -665,25 +667,63 @@ async def on_raw_message_edit(payload):
     logs = bot.get_channel(gld[5])
     before = get_msg_by_id(payload.message_id)
     after = await channel.fetch_message(payload.message_id)
-    if before[7] == after.clean_content:
+    if logs is None:
+        pass
+    elif before is None:
+        pass
+    elif before[7] == after.clean_content:
+        pass
+    elif after.author.bot:
         pass
     else:
-        if after.author.bot:
-            pass
-        elif logs is None:
-            pass
-        else:
-            embed = discord.Embed(
-                title=f"**Message edited in #{after.channel}**",
-                description=f"""**Author:** <@!{after.author.id}>
+        embed = discord.Embed(
+            title=f"**Message edited in #{after.channel}**",
+            description=f"""**Author:** <@!{after.author.id}>
 **Channel:** <#{after.channel.id}> ({after.channel.id})
 **Message ID:** {after.id}
-[Jump Url]({after.jump_url})""",
-                color=0xFFC704,
+**[Jump Url]({after.jump_url})**""",
+            color=0xFFC704,
+        )
+        embed.set_author(
+            name=f"{after.author.name}#{after.author.discriminator} ({after.author.id})"
+        )
+        if len(before[7]) == 0:
+            embed.add_field(name=f"**Before**", value=f"`Blank`", inline=False)
+        elif len(before[7]) <= 1024:
+            embed.add_field(name=f"**Before**", value=f"{before[7]} ", inline=False)
+        else:
+            prts = before[7]
+            prt_1 = prts[:1024]
+            prt_2 = prts[1024:]
+            embed.add_field(name=f"**Before**", value=f"{prt_1}", inline=False)
+            embed.add_field(name=f"Continued", value=f"{prt_2}")
+        if len(after.content) <= 1024:
+            embed.add_field(name=f"**After**", value=f"{after.content} ", inline=False)
+        else:
+            prts = after.content
+            prt_1 = prts[:1024]
+            prt_2 = prts[1024:]
+            embed.add_field(name=f"**After**", value=f"{prt_1}", inline=False)
+            embed.add_field(name=f"Continued", value=f"{prt_2}")
+        embed.set_thumbnail(url=after.author.avatar_url)
+        embed.set_footer(text=f"")
+        embed.timestamp = datetime.utcnow()
+        await logs.send(embed=embed)
+        tracked = (after.guild.id, after.author.id)
+        tracker = get_tracked_by_id(conn, tracked)
+        if tracker is None:
+            pass
+        else:
+            channel = bot.get_channel(tracker[3])
+            embed = discord.Embed(
+                description=f"**[Jump Url]({after.jump_url})**", color=0xFFF1D7,
             )
-            embed.set_author(
-                name=f"{after.author.name}#{after.author.discriminator} ({after.author.id})"
+            embed.set_author(name=f"#{after.channel.name}")
+            embed.set_footer(
+                text=f"{tracker[1]}({tracker[0]})\nMessage sent",
+                icon_url=after.author.avatar_url,
             )
+            embed.timestamp = datetime.utcnow()
             if len(before[7]) == 0:
                 embed.add_field(name=f"**Before**", value=f"`Blank`", inline=False)
             elif len(before[7]) <= 1024:
@@ -704,51 +744,9 @@ async def on_raw_message_edit(payload):
                 prt_2 = prts[1024:]
                 embed.add_field(name=f"**After**", value=f"{prt_1}", inline=False)
                 embed.add_field(name=f"Continued", value=f"{prt_2}")
-            embed.set_thumbnail(url=after.author.avatar_url)
-            embed.set_footer(text=f"")
-            embed.timestamp = datetime.utcnow()
-            await logs.send(embed=embed)
-            tracked = (after.guild.id, after.author.id)
-            tracker = get_tracked_by_id(conn, tracked)
-            if tracker is None:
-                pass
-            else:
-                end_time = datetime.strptime(tracker[4], "%Y-%m-%d %H:%M:%S.%f")
-                channel = bot.get_channel(tracker[3])
-                embed = discord.Embed(
-                    description=f"**[Jump Url]({after.jump_url})**", color=0xFFF1D7,
-                )
-                embed.set_author(name=f"#{after.channel.name}")
-                embed.set_footer(
-                    text=f"{tracker[1]}({tracker[0]})\nMessage sent",
-                    icon_url=after.author.avatar_url,
-                )
-                embed.timestamp = datetime.utcnow()
-                if len(before[7]) == 0:
-                    embed.add_field(name=f"**Before**", value=f"`Blank`", inline=False)
-                elif len(before[7]) <= 1024:
-                    embed.add_field(
-                        name=f"**Before**", value=f"{before[7]} ", inline=False
-                    )
-                else:
-                    prts = before[7]
-                    prt_1 = prts[:1024]
-                    prt_2 = prts[1024:]
-                    embed.add_field(name=f"**Before**", value=f"{prt_1}", inline=False)
-                    embed.add_field(name=f"Continued", value=f"{prt_2}")
-                if len(after.content) <= 1024:
-                    embed.add_field(
-                        name=f"**After**", value=f"{after.content} ", inline=False
-                    )
-                else:
-                    prts = after.content
-                    prt_1 = prts[:1024]
-                    prt_2 = prts[1024:]
-                    embed.add_field(name=f"**After**", value=f"{prt_1}", inline=False)
-                    embed.add_field(name=f"Continued", value=f"{prt_2}")
-                await channel.send(embed=embed)
-            content = after.content
-            update_msg(payload.message_id, content)
+            await channel.send(embed=embed)
+        content = after.content
+        update_msg(payload.message_id, content)
 
 
 # member update event (nickname, roles, activity, status)
@@ -830,7 +828,11 @@ async def on_raw_bulk_message_delete(payload):
     messages = []
     ids = sorted(payload.message_ids)
     for id in ids:
-        messages.append(get_msg_by_id(id))
+        message = get_msg_by_id(id)
+        if message is None:
+            pass
+        else:
+            messages.append(message)
     gld = get_log_by_id(payload.guild_id)
     logs = bot.get_channel(gld[4])
     current_time = datetime.utcnow()
@@ -843,7 +845,7 @@ Full message dump attached below.""",
         color=0xFF0080,
     )
     embed.timestamp = datetime.utcnow()
-    with open("./log.txt", "w") as file:
+    with open("./log.txt", "w", encoding="utf-8") as file:
         for message in messages:
             file.writelines(
                 f"Author: {message[2]} ({message[1]})\nID:{message[0]}\nContent: {message[7]}\n\n"
