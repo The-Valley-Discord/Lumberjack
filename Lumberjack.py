@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from discord.ext import commands
 import sqlite3
 
-bot = commands.Bot(command_prefix="bum.")
+bot = commands.Bot(command_prefix="lum.")
 before_invites = []
 format_date = "%b %d, %Y"
 format_time = "%I:%M %p"
@@ -45,7 +45,8 @@ c.execute(
             username integer,
             nickname integer,
             avatar integer,
-            stat_member integer
+            stat_member integer,
+            ljid integer
             ) """
 )
 c.execute(
@@ -56,8 +57,7 @@ c.execute(
             channelid integer,
             endtime timestamp,
             modid integer,
-            modname text,
-            ljid integer
+            modname text
             ) """
 )
 
@@ -273,7 +273,6 @@ async def on_guild_join(guild):
 @commands.check_any(has_permissions())
 async def log(ctx, arg1, arg2):
     log_name = ""
-    channel_id = 0
     strip = ["<", ">", "#"]
     str_channel = arg2.lower()
     log_type = arg1.lower()
@@ -320,7 +319,8 @@ async def log(ctx, arg1, arg2):
         log_name = "Lumberjack Logs"
     if len(log_name) == 0:
         await ctx.send(
-            "Incorrect log type. Please use one of the following. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, Stats or LJLog"
+            "Incorrect log type. Please use one of the following. Join, Leave, "
+            "Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, Stats or LJLog"
         )
     elif logs is None:
         await ctx.send("Invalid channel ID")
@@ -368,7 +368,8 @@ async def clear(ctx, arg1):
         log_name = "Lumberjack Logs"
     if len(log_name) == 0:
         await ctx.send(
-            "Incorrect log type. Please use one of the following. Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, Stats or LJLog"
+            "Incorrect log type. Please use one of the following. Join, Leave, "
+            "Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, Stats or LJLog"
         )
     else:
         await ctx.send(f"Disabled {log_name} logs.")
@@ -535,19 +536,22 @@ async def on_member_join(member):
         if (account_age.seconds // 3600) == 0 and account_age.days == 0:
             embed.add_field(
                 name="**New Account**",
-                value=f"Created {(account_age.seconds % 3600) // 60} minutes {((account_age.seconds % 3600) % 60)} seconds ago.",
+                value=f"Created {(account_age.seconds % 3600) // 60} minutes "
+                      f"{((account_age.seconds % 3600) % 60)} seconds ago.",
                 inline=False,
             )
         elif 0 < (account_age.seconds // 3600) and account_age.days == 0:
             embed.add_field(
                 name="**New Account**",
-                value=f"Created {account_age.seconds // 3600} hours {(account_age.seconds % 3600) // 60} minutes {((account_age.seconds % 3600) % 60)} seconds ago.",
+                value=f"Created {account_age.seconds // 3600} hours {(account_age.seconds % 3600) // 60} minutes "
+                      f"{((account_age.seconds % 3600) % 60)} seconds ago.",
                 inline=False,
             )
         elif 0 < account_age.days < 7:
             embed.add_field(
                 name="**New Account**",
-                value=f"Created {account_age.days} days {account_age.seconds // 3600} hours {(account_age.seconds % 3600) // 60} minutes ago.",
+                value=f"Created {account_age.days} days {account_age.seconds // 3600} hours "
+                      f"{(account_age.seconds % 3600) // 60} minutes ago.",
                 inline=False,
             )
         else:
@@ -697,7 +701,9 @@ async def on_raw_message_edit(payload):
             prt_2 = prts[1024:]
             embed.add_field(name=f"**Before**", value=f"{prt_1}", inline=False)
             embed.add_field(name=f"Continued", value=f"{prt_2}")
-        if len(after.content) <= 1024:
+        if len(after.content) == 0:
+            embed.add_field(name=f"**After**", value=f"`Blank`", inline=False)
+        elif len(after.content) <= 1024:
             embed.add_field(name=f"**After**", value=f"{after.content} ", inline=False)
         else:
             prts = after.content
@@ -734,7 +740,9 @@ async def on_raw_message_edit(payload):
                 prt_2 = prts[1024:]
                 embed.add_field(name=f"**Before**", value=f"{prt_1}", inline=False)
                 embed.add_field(name=f"Continued", value=f"{prt_2}")
-            if len(after.content) <= 1024:
+            if len(after.content) == 0:
+                embed.add_field(name=f"**After**", value=f"`Blank`", inline=False)
+            elif len(after.content) <= 1024:
                 embed.add_field(
                     name=f"**After**", value=f"{after.content} ", inline=False
                 )
