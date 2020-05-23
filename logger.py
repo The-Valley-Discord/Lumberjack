@@ -36,8 +36,7 @@ class Logger(commands.Cog):
         else:
             channel_id = int(str_channel)
         logs = self.bot.get_channel(channel_id)
-        log_type = log_type.lower()
-        log_name = set_log_channel(log_type, ctx.guild.id, channel_id)
+        log_name = set_log_channel(log_type.lower(), ctx.guild.id, channel_id)
         if logs is None:
             await ctx.send("Invalid channel ID")
         elif len(log_name) == 0:

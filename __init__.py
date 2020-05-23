@@ -7,7 +7,7 @@ from logger import Logger
 from member_log import MemberLog
 from tracker import Tracker
 
-bot = commands.Bot(command_prefix="lum.")
+bot = commands.Bot(command_prefix="bum.")
 bot.add_cog(MemberLog(bot))
 bot.add_cog(Tracker(bot))
 bot.add_cog(Logger(bot))
@@ -28,8 +28,7 @@ async def on_ready():
         else:
             pass
         for invite in await guild.invites():
-            # x = [invite.url, invite.uses, invite.inviter]
-            add_invite(invite=invite)
+            add_invite(invite)
     print("Bot is ready.")
 
 

@@ -20,11 +20,11 @@ class MemberLog(commands.Cog):
         invite_used = "Vanity URL"
         invite_uses = ""
         inviter = ""
-        for invite in await logs.guild.invites():
+        for invite in await member.guild.invites():
             before_invite = get_invite(invite.id)
             if before_invite.uses != invite.uses:
                 invite_used = invite.url
-                invite_uses = f"{invite.uses} uses"
+                invite_uses = f"({invite.uses} uses)"
                 inviter = invite.inviter
                 update_invite(invite)
         if account_age.days < 7:
@@ -39,7 +39,7 @@ class MemberLog(commands.Cog):
                 description=f"""**Name:** {member.mention}
     **Created on:** {member.created_at.strftime(format_date)}
     **Account age:** {account_age.days} days old
-    **Invite used:** {invite_used} ({invite_uses})
+    **Invite used:** {invite_used} {invite_uses}
     **Created By:** {inviter}""",
                 color=color,
             )
