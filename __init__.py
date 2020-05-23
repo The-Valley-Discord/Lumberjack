@@ -3,8 +3,14 @@ from discord.ext import commands
 
 from database import get_log_by_id, add_guild
 from helpers import add_invite, remove_invite
+from logger import Logger
+from member_log import MemberLog
+from tracker import Tracker
 
 bot = commands.Bot(command_prefix="lum.")
+bot.add_cog(MemberLog(bot))
+bot.add_cog(Tracker(bot))
+bot.add_cog(Logger(bot))
 
 
 @bot.event

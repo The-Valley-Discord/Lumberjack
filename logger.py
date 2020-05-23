@@ -5,7 +5,6 @@ from discord.ext import commands
 
 from database import add_message, add_attachment, get_log_by_id, get_att_by_id, get_msg_by_id, update_msg
 from helpers import has_permissions, set_log_channel, format_datetime
-from . import conn
 
 
 class Logger(commands.Cog):
@@ -76,7 +75,7 @@ class Logger(commands.Cog):
             avatar_url,
             attachment_bool,
         )
-        add_message(conn, mymessage)
+        add_message(mymessage)
         if attachment_bool:
             add_attachment(message.id, attachments)
         await self.bot.process_commands(message)
