@@ -10,11 +10,11 @@ def init_db():
     """
     Initializes database tables from schema.sql
     """
-    with open('./schema.sql', 'r') as schema_file:
+    with open("./schema.sql", "r") as schema_file:
         schema = schema_file.read()
 
     c.executescript(schema)
-    lumberlog.debug('Database initialized from schema.sql')
+    lumberlog.debug("Database initialized from schema.sql")
 
 
 def add_message(message):
@@ -51,7 +51,8 @@ def add_attachment(message_id, attachments):
     for attachment in attachments:
         c.execute(
             "INSERT INTO attachment_urls VALUES (:message_id, :attachment)",
-            {"message_id": message_id, "attachment": attachment})
+            {"message_id": message_id, "attachment": attachment},
+        )
 
 
 def add_guild(guild_id):
@@ -71,53 +72,73 @@ def get_log_by_id(guild_id):
 
 
 def set_join_channel(guild_id, channel_id):
-    c.execute("UPDATE log_channels SET joinid = ? WHERE guildid = ?",
-              {"joinid": channel_id, "guildid": guild_id})
+    c.execute(
+        "UPDATE log_channels SET joinid=:joinid WHERE guildid=:guildid",
+        {"joinid": channel_id, "guildid": guild_id},
+    )
 
 
 def set_leave_channel(guild_id, channel_id):
-    c.execute("UPDATE log_channels SET leaveid = ? WHERE guildid = ?",
-              {"leaveid": channel_id, "guildid": guild_id})
+    c.execute(
+        "UPDATE log_channels SET leaveid=:leaveid WHERE guildid=:guildid",
+        {"leaveid": channel_id, "guildid": guild_id},
+    )
 
 
 def set_delete_channel(guild_id, channel_id):
-    c.execute("UPDATE log_channels SET deleteid = ? WHERE guildid = ?",
-              {"deleteid": channel_id, "guildid": guild_id})
+    c.execute(
+        "UPDATE log_channels SET deleteid=:deleteid WHERE guildid=:guildid",
+        {"deleteid": channel_id, "guildid": guild_id},
+    )
 
 
 def set_bulk_delete_channel(guild_id, channel_id):
-    c.execute("UPDATE log_channels SET delete_bulk = ? WHERE guildid = ?",
-              {"delete_bulk": channel_id, "guildid": guild_id})
+    c.execute(
+        "UPDATE log_channels SET delete_bulk=:delete_bulk WHERE guildid=:guildid",
+        {"delete_bulk": channel_id, "guildid": guild_id},
+    )
 
 
 def set_edit_channel(guild_id, channel_id):
-    c.execute("UPDATE log_channels SET edit = ? WHERE guildid = ?",
-              {"edit": channel_id, "guildid": guild_id})
+    c.execute(
+        "UPDATE log_channels SET edit=:edit WHERE guildid=:guildid",
+        {"edit": channel_id, "guildid": guild_id},
+    )
 
 
 def set_username_channel(guild_id, channel_id):
-    c.execute("UPDATE log_channels SET username = ? WHERE guildid = ?",
-              {"username": channel_id, "guildid": guild_id})
+    c.execute(
+        "UPDATE log_channels SET username=:username WHERE guildid=:guildid",
+        {"username": channel_id, "guildid": guild_id},
+    )
 
 
 def set_nickname_channel(guild_id, channel_id):
-    c.execute("UPDATE log_channels SET nickname = ? WHERE guildid = ?",
-              {"nickname": channel_id, "guildid": guild_id})
+    c.execute(
+        "UPDATE log_channels SET nickname=:nickname WHERE guildid=:guildid",
+        {"nickname": channel_id, "guildid": guild_id},
+    )
 
 
 def set_avatar_channel(guild_id, channel_id):
-    c.execute("UPDATE log_channels SET avatar = ? WHERE guildid = ?",
-              {"avatar": channel_id, "guildid": guild_id})
+    c.execute(
+        "UPDATE log_channels SET avatar=:avatar WHERE guildid=:guildid",
+        {"avatar": channel_id, "guildid": guild_id},
+    )
 
 
 def set_stats_channel(guild_id, channel_id):
-    c.execute("UPDATE log_channels SET stats = ? WHERE guildid = ?",
-              {"stats": channel_id, "guildid": guild_id})
+    c.execute(
+        "UPDATE log_channels SET stat_member=:stats WHERE guildid=:guildid",
+        {"stats": channel_id, "guildid": guild_id},
+    )
 
 
 def set_ljlog_channel(guild_id, channel_id):
-    c.execute("UPDATE log_channels SET ljlog = ? WHERE guildid = ?",
-              {"ljlog": channel_id, "guildid": guild_id})
+    c.execute(
+        "UPDATE log_channels SET ljid=:ljlog WHERE guildid=:guildid",
+        {"ljlog": channel_id, "guildid": guild_id},
+    )
 
 
 def get_tracked_by_id(tracked):

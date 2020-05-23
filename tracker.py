@@ -3,7 +3,13 @@ from datetime import datetime, timedelta
 import discord
 from discord.ext import commands
 
-from database import get_tracked_by_id, remove_tracker, get_log_by_id, add_tracker, get_msg_by_id
+from database import (
+    get_tracked_by_id,
+    remove_tracker,
+    get_log_by_id,
+    add_tracker,
+    get_msg_by_id,
+)
 from helpers import message_splitter, has_permissions
 
 
@@ -41,8 +47,7 @@ class Tracker(commands.Cog):
                 f"mention/id)"
             )
         elif user.guild_permissions.manage_guild:
-            await ctx.send(
-                f'<\_<\n>\_>\nI can\'t track a mod.\n Try someone else')
+            await ctx.send(f"<\_<\n>\_>\nI can't track a mod.\n Try someone else")
         elif channel is None:
             await ctx.send(
                 f"A valid Channel was not entered\nFormat is lum.track (user mention/id) (time in d or h) (log channel "
@@ -99,13 +104,16 @@ class Tracker(commands.Cog):
         if tracker is None:
             pass
         else:
-            attachments = [f"{attachment.proxy_url}" for attachment in message.attachments]
+            attachments = [
+                f"{attachment.proxy_url}" for attachment in message.attachments
+            ]
             end_time = datetime.strptime(tracker[4], "%Y-%m-%d %H:%M:%S.%f")
             channel = self.bot.get_channel(tracker[3])
             if end_time < datetime.utcnow():
                 remove_tracker(tracked)
                 embed = discord.Embed(
-                    description=f"""Tracker on {tracker[1]} has expired""", color=0xFFF1D7
+                    description=f"""Tracker on {tracker[1]} has expired""",
+                    color=0xFFF1D7,
                 )
                 embed.set_author(name="Tracker Expired")
                 embed.timestamp = datetime.utcnow()
@@ -116,11 +124,11 @@ class Tracker(commands.Cog):
             else:
                 message_split = message_splitter(message.clean_content, 1900)
                 embed = discord.Embed(
-                    description=f"**[Jump URL]({message.jump_url})**\n{message[0]}",
+                    description=f"**[Jump URL]({message.jump_url})**\n{message_split[0]}",
                     color=0xFFF1D7,
                 )
                 embed.set_footer(
-                    text=f"{tracker[1]}({tracker[0]}\nMessage sent",
+                    text=f"{tracker[1]}\t({tracker[0]})\nMessage sent",
                     icon_url=f"{message.author.avatar_url}",
                 )
                 embed.set_author(name=f"#{message.channel.name}")
@@ -130,12 +138,12 @@ class Tracker(commands.Cog):
                 if len(attachments) > 0:
                     attachments_str = " ".join(attachments)
                     embed.add_field(
-                        name=f"**Attachments**", value=f"{attachments_str}", inline=False
+                        name=f"**Attachments**",
+                        value=f"{attachments_str}",
+                        inline=False,
                     )
                     embed.set_image(url=attachments[0])
                 await channel.send(embed=embed)
-
-        await self.bot.process_commands(message)
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
@@ -153,7 +161,7 @@ class Tracker(commands.Cog):
             )
             embed.set_author(name=f"#{after.channel.name}")
             embed.set_footer(
-                text=f"{tracker[1]}({tracker[0]})\nMessage sent",
+                text=f"{tracker[1]}\t({tracker[0]})\nMessage sent",
                 icon_url=after.author.avatar_url,
             )
             embed.timestamp = datetime.utcnow()
@@ -216,7 +224,8 @@ class Tracker(commands.Cog):
             elif after.channel != before.channel:
                 embed = discord.Embed(
                     description=f"**From:** {before.channel.name}\n"
-                                f"**To:** {after.channel.name}", color=0xFF0080
+                    f"**To:** {after.channel.name}",
+                    color=0xFF0080,
                 )
                 embed.set_author(name="Moved Voice Channels")
                 embed.set_footer(

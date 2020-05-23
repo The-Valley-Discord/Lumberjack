@@ -20,7 +20,7 @@ class MemberLog(commands.Cog):
         invite_used = "Vanity URL"
         invite_uses = ""
         inviter = ""
-        for invite in await gld.invites():
+        for invite in await logs.guild.invites():
             before_invite = get_invite(invite.id)
             if before_invite.uses != invite.uses:
                 invite_used = invite.url
@@ -39,7 +39,7 @@ class MemberLog(commands.Cog):
                 description=f"""**Name:** {member.mention}
     **Created on:** {member.created_at.strftime(format_date)}
     **Account age:** {account_age.days} days old
-    **Invite used:** {invite_used} {invite_uses}
+    **Invite used:** {invite_used} ({invite_uses})
     **Created By:** {inviter}""",
                 color=color,
             )
@@ -85,7 +85,9 @@ class MemberLog(commands.Cog):
             roles = [f"<@&{role.id}>" for role in member.roles[1:]]
             roles_str = " ".join(roles)
             if len(roles) < 1:
-                embed.add_field(name=f"**Roles[{len(roles)}]**", value="None", inline=False)
+                embed.add_field(
+                    name=f"**Roles[{len(roles)}]**", value="None", inline=False
+                )
             else:
                 embed.add_field(
                     name=f"**Roles[{len(roles)}]**", value=f"{roles_str}", inline=False
@@ -124,7 +126,10 @@ class MemberLog(commands.Cog):
         for guild in self.bot.guilds:
             if after in guild.members:
                 gld = get_log_by_id(guild.id)
-                if before.name != after.name or before.discriminator != after.discriminator:
+                if (
+                    before.name != after.name
+                    or before.discriminator != after.discriminator
+                ):
                     logs = self.bot.get_channel(gld[6])
                     if logs is None:
                         pass

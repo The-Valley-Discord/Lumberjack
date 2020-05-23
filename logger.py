@@ -3,7 +3,14 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from database import add_message, add_attachment, get_log_by_id, get_att_by_id, get_msg_by_id, update_msg
+from database import (
+    add_message,
+    add_attachment,
+    get_log_by_id,
+    get_att_by_id,
+    get_msg_by_id,
+    update_msg,
+)
 from helpers import has_permissions, set_log_channel, format_datetime
 
 
@@ -29,7 +36,8 @@ class Logger(commands.Cog):
         else:
             channel_id = int(str_channel)
         logs = self.bot.get_channel(channel_id)
-        log_name = set_log_channel(log_type.lower, ctx.guild.id, channel_id)
+        log_type = log_type.lower()
+        log_name = set_log_channel(log_type, ctx.guild.id, channel_id)
         if logs is None:
             await ctx.send("Invalid channel ID")
         elif len(log_name) == 0:
@@ -45,7 +53,7 @@ class Logger(commands.Cog):
     @commands.command()
     @commands.check_any(has_permissions())
     async def clear(self, ctx, log_type):
-        log_name = set_log_channel(log_type.lower, ctx.guild.id, 0)
+        log_name = set_log_channel(log_type.lower(), ctx.guild.id, 0)
         if len(log_name) == 0:
             await ctx.send(
                 "Incorrect log type. Please use one of the following. Join, Leave, "
@@ -78,7 +86,6 @@ class Logger(commands.Cog):
         add_message(mymessage)
         if attachment_bool:
             add_attachment(message.id, attachments)
-        await self.bot.process_commands(message)
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
@@ -160,7 +167,8 @@ class Logger(commands.Cog):
             await logs.send(embed=embed)
             await logs.send(
                 file=discord.File(
-                    "./log.txt", filename=f"{current_time.strftime(format_datetime)}.txt"
+                    "./log.txt",
+                    filename=f"{current_time.strftime(format_datetime)}.txt",
                 )
             )
         except discord.HTTPException:
@@ -206,7 +214,9 @@ class Logger(commands.Cog):
             if len(after.content) == 0:
                 embed.add_field(name=f"**After**", value=f"`Blank`", inline=False)
             elif len(after.content) <= 1024:
-                embed.add_field(name=f"**After**", value=f"{after.content} ", inline=False)
+                embed.add_field(
+                    name=f"**After**", value=f"{after.content} ", inline=False
+                )
             else:
                 prts = after.content
                 prt_1 = prts[:1024]
