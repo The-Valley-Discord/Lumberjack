@@ -69,5 +69,20 @@ async def ping(ctx):
     await ctx.send(embed=embed)
 
 
+bot.remove_command("help")
+
+
+@bot.command(aliases=["help"])
+async def _help(ctx):
+    await ctx.send(
+        "`lum.ping` to check bot responsiveness\n"
+        '`lum.log <log type> <"here" or channel mention/id>` will change what channel a log appears in\n'
+        "`lum.clear <log type>` will disable a log\n"
+        "`lum.track <user mention/id> <time in d h or m> <channel mention/id>` "
+        "to place a tracker on someone\n"
+        "`lum.untrack <user mention/id>` will remove a tracker"
+    )
+
+
 with open("token", "r") as f:
     bot.run(f.readline().strip())
