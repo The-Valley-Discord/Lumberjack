@@ -250,51 +250,50 @@ class Tracker(commands.Cog):
                 pass
             else:
                 embed = discord.Embed(
-                    description=f"""**User:** <@!{after.id}>\n
-           **Before:** {before.nick}
+                    description=f"""**Before:** {before.nick}
            **After:** {after.nick}""",
                     color=0x22FFC2,
                 )
-                embed.set_footer(text=f"{after.name}#{after.discriminator} \n({after.id})")
+                embed.set_author(name=f"{after.name}#{after.discriminator}")
+                embed.set_footer(text=f"{after.id})")
                 embed.timestamp = datetime.utcnow()
                 await channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
-        tracked = (after.guild.id, after.id)
-        tracker = get_tracked_by_id(tracked)
-        if tracker is None:
-            pass
-        else:
-            if (
-                    before.name != after.name
-                    or before.discriminator != after.discriminator
-            ):
-                channel = self.bot.get_channel(tracker[3])
-                if channel is None:
-                    pass
-                else:
-                    embed = discord.Embed(
-                        description=f"""**User:** <@!{after.id}>\n
-   **Before:** {before.name}#{before.discriminator}
-   **After:** {after.name}#{after.discriminator}""",
-                        color=0x22FFC2,
-                    )
-                    embed.set_thumbnail(url=after.avatar_url)
-                    embed.set_footer(text=f"{after.name}#{after.discriminator} \n({after.id})")
-                    embed.timestamp = datetime.utcnow()
-                    await channel.send(embed=embed)
-            if before.avatar != after.avatar:
-                channel = self.bot.get_channel(tracker[3])
-                if channel is None:
-                    pass
-                else:
-                    embed = discord.Embed(
-                        description=f"""**User:** <@!{after.id}>\n
-   Old avatar in thumbnail. New avatar down below""",
-                        color=0x8000FF)
-                    embed.set_thumbnail(url=before.avatar_url)
-                    embed.set_footer(text=f"{after.name}#{after.discriminator} \n({after.id})")
-                    embed.set_image(url=after.avatar_url_as(size=128))
-                    embed.timestamp = datetime.utcnow()
-                    await channel.send(embed=embed)
+        for guild in self.bot.guilds:
+            tracked = (guild.id, after.id)
+            tracker = get_tracked_by_id(tracked)
+            if tracker is None:
+                pass
+            else:
+                if (
+                        before.name != after.name
+                        or before.discriminator != after.discriminator
+                ):
+                    channel = self.bot.get_channel(tracker[3])
+                    if channel is None:
+                        pass
+                    else:
+                        embed = discord.Embed(
+                            description=f"""**Before:** {before.name}#{before.discriminator}
+        **After:** {after.name}#{after.discriminator}""",
+                            color=0x22FFC2,
+                        )
+                        embed.set_author(name=f"{after.name}#{after.discriminator}")
+                        embed.set_footer(text=f"{after.id})")
+                        embed.timestamp = datetime.utcnow()
+                        await channel.send(embed=embed)
+                if before.avatar != after.avatar:
+                    channel = self.bot.get_channel(tracker[3])
+                    if channel is None:
+                        pass
+                    else:
+                        embed = discord.Embed(
+                            description=f"New avatar",
+                            color=0x8000FF)
+                        embed.set_author(name=f"{after.name}#{after.discriminator}")
+                        embed.set_footer(text=f"{after.id})")
+                        embed.set_thumbnail(url=after.avatar_url)
+                        embed.timestamp = datetime.utcnow()
+                        await channel.send(embed=embed)
