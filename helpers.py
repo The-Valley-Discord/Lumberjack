@@ -5,7 +5,7 @@ import database
 
 def has_permissions():
     def predicate(ctx):
-        return ctx.author.guild_permissions.manage_guild is True
+        return ctx.author.guild_permissions.manage_messages is True
 
     return commands.check(predicate)
 

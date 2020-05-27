@@ -250,12 +250,11 @@ class Tracker(commands.Cog):
                 pass
             else:
                 embed = discord.Embed(
-                    description=f"""**Before:** {before.nick}
-           **After:** {after.nick}""",
+                    description=f"**Before:** {before.nick}\n**After:** {after.nick}",
                     color=0x22FFC2,
                 )
                 embed.set_author(name=f"{after.name}#{after.discriminator}")
-                embed.set_footer(text=f"{after.id})")
+                embed.set_footer(text=f"{after.id}")
                 embed.timestamp = datetime.utcnow()
                 await channel.send(embed=embed)
 
@@ -268,20 +267,22 @@ class Tracker(commands.Cog):
                 pass
             else:
                 if (
-                        before.name != after.name
-                        or before.discriminator != after.discriminator
+                    before.name != after.name
+                    or before.discriminator != after.discriminator
                 ):
                     channel = self.bot.get_channel(tracker[3])
                     if channel is None:
                         pass
                     else:
                         embed = discord.Embed(
-                            description=f"""**Before:** {before.name}#{before.discriminator}
-        **After:** {after.name}#{after.discriminator}""",
+                            description=(
+                                f"**Before:** {before.name}#{before.discriminator}\n"
+                                f"**After:** {after.name}#{after.discriminator}"
+                            ),
                             color=0x22FFC2,
                         )
                         embed.set_author(name=f"{after.name}#{after.discriminator}")
-                        embed.set_footer(text=f"{after.id})")
+                        embed.set_footer(text=f"{after.id}")
                         embed.timestamp = datetime.utcnow()
                         await channel.send(embed=embed)
                 if before.avatar != after.avatar:
@@ -289,11 +290,9 @@ class Tracker(commands.Cog):
                     if channel is None:
                         pass
                     else:
-                        embed = discord.Embed(
-                            description=f"New avatar",
-                            color=0x8000FF)
+                        embed = discord.Embed(description=f"New avatar", color=0x8000FF)
                         embed.set_author(name=f"{after.name}#{after.discriminator}")
-                        embed.set_footer(text=f"{after.id})")
+                        embed.set_footer(text=f"{after.id}")
                         embed.set_thumbnail(url=after.avatar_url)
                         embed.timestamp = datetime.utcnow()
                         await channel.send(embed=embed)

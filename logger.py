@@ -102,9 +102,11 @@ class Logger(commands.Cog):
         else:
             embed = discord.Embed(
                 title=f"**Message deleted in #{channel}**",
-                description=f"""**Author:** {author.mention}
-    **Channel:** {channel.mention} ({channel.id})
-    **Message ID:** {payload.message_id}""",
+                description=(
+                    f"**Author:** {author.mention}\n"
+                    f"**Channel:** {channel.mention} ({channel.id})\n"
+                    f"**Message ID:** {payload.message_id}"
+                ),
                 color=0xD90000,
             )
             if len(msg[7]) == 0:
@@ -151,9 +153,11 @@ class Logger(commands.Cog):
         purged_channel = self.bot.get_channel(payload.channel_id)
         embed = discord.Embed(
             title=f"**Bulk Message Delete**",
-            description=f"""**Message Count:** {len(messages)}
-    **Channel:** {purged_channel.mention}
-    Full message dump attached below.""",
+            description=(
+                f"**Message Count:** {len(messages)}\n"
+                f"**Channel:** {purged_channel.mention}\n"
+                f"Full message dump attached below."
+            ),
             color=0xFF0080,
         )
         embed.timestamp = datetime.utcnow()
@@ -191,10 +195,12 @@ class Logger(commands.Cog):
         else:
             embed = discord.Embed(
                 title=f"**Message edited in #{after.channel}**",
-                description=f"""**Author:** <@!{after.author.id}>
-    **Channel:** <#{after.channel.id}> ({after.channel.id})
-    **Message ID:** {after.id}
-    **[Jump Url]({after.jump_url})**""",
+                description=(
+                    f"**Author:** <@!{after.author.id}>\n"
+                    f"**Channel:** <#{after.channel.id}> ({after.channel.id})\n"
+                    f"**Message ID:** {after.id}\n"
+                    f"**[Jump Url]({after.jump_url})**"
+                ),
                 color=0xFFC704,
             )
             embed.set_author(

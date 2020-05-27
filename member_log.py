@@ -36,11 +36,13 @@ class MemberLog(commands.Cog):
         else:
             embed = discord.Embed(
                 title=f"**User Joined**",
-                description=f"""**Name:** {member.mention}
-    **Created on:** {member.created_at.strftime(format_date)}
-    **Account age:** {account_age.days} days old
-    **Invite used:** {invite_used} {invite_uses}
-    **Created By:** {inviter}""",
+                description=(
+                    f"**Name:** {member.mention}\n"
+                    f"**Created on:** {member.created_at.strftime(format_date)}\n"
+                    f"**Account age:** {account_age.days} days old\n"
+                    f"**Invite used:** {invite_used} {invite_uses}\n"
+                    f"**Created By:** {inviter}"
+                ),
                 color=color,
             )
             new_account_string = return_time_delta_string(account_age)
@@ -72,10 +74,12 @@ class MemberLog(commands.Cog):
             time_on_server = datetime.utcnow() - member.joined_at
             embed = discord.Embed(
                 title=f"**User Left**",
-                description=f"""**Name:** {member.mention}
-    **Created on:** {member.created_at.strftime(format_date)}
-    **Account age:** {account_age.days} days old
-    **Joined on:** {member.joined_at.strftime(format_date)} ({time_on_server.days} days ago)""",
+                description=(
+                    f"**Name:** {member.mention}\n"
+                    f"**Created on:** {member.created_at.strftime(format_date)}\n"
+                    f"**Account age:** {account_age.days} days old\n"
+                    f"**Joined on:** {member.joined_at.strftime(format_date)} ({time_on_server.days} days ago)"
+                ),
                 color=0xD90000,
             )
             embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})")
@@ -110,9 +114,11 @@ class MemberLog(commands.Cog):
         else:
             embed = discord.Embed(
                 title=f"**User Nickname Updated**",
-                description=f"""**User:** <@!{after.id}>\n
-    **Before:** {before.nick}
-    **After:** {after.nick}""",
+                description=(
+                    f"**User:** <@!{after.id}>\n\n"
+                    f"**Before:** {before.nick}\n"
+                    f"**After:** {after.nick}"
+                ),
                 color=0x22FFC2,
             )
             embed.set_author(name=f"{after.name}#{after.discriminator} ({after.id})")
@@ -136,9 +142,11 @@ class MemberLog(commands.Cog):
                     else:
                         embed = discord.Embed(
                             title=f"**Username Updated**",
-                            description=f"""**User:** <@!{after.id}>\n
-    **Before:** {before.name}#{before.discriminator}
-    **After:** {after.name}#{after.discriminator}""",
+                            description=(
+                                f"**User:** <@!{after.id}>\n\n"
+                                f"**Before:** {before.name}#{before.discriminator}\n"
+                                f"**After:** {after.name}#{after.discriminator}"
+                            ),
                             color=0x22FFC2,
                         )
                         embed.set_author(
@@ -155,8 +163,10 @@ class MemberLog(commands.Cog):
                     else:
                         embed = discord.Embed(
                             title=f"**User avatar Updated**",
-                            description=f"""**User:** <@!{after.id}>\n
-    Old avatar in thumbnail. New avatar down below""",
+                            description=(
+                                f"**User:** <@!{after.id}>\n\n"
+                                f"Old avatar in thumbnail. New avatar down below"
+                            ),
                             color=0x8000FF,
                         )
                         embed.set_author(
