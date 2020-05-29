@@ -46,8 +46,9 @@ class Logger(commands.Cog):
             )
         else:
             await ctx.send(f"Updated {log_name} Log Channel to {logs.mention}")
-            if log_name == "Stats":
-                await logs.edit(name=f"Members: {logs.guild.member_count}")
+            #broken member count tracker
+            #if log_name == "Stats":
+            #    await logs.edit(name=f"Members: {logs.guild.member_count}")
 
     @commands.command()
     @commands.check_any(has_permissions())

@@ -58,9 +58,10 @@ def set_log_channel(log_type, guild_id, channel_id):
     elif log_type == "avatar":
         database.set_avatar_channel(guild_id, channel_id)
         return "Avatar"
-    elif log_type == "stats":
-        database.set_stats_channel(guild_id, channel_id)
-        return "Stats"
+    #broken member tracker
+    #elif log_type == "stats":
+    #    database.set_stats_channel(guild_id, channel_id)
+    #    return "Stats"
     elif log_type == "ljlog":
         database.set_ljlog_channel(guild_id, channel_id)
         return "Lumberjack Logs"

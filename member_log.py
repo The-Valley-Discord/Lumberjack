@@ -57,11 +57,12 @@ class MemberLog(commands.Cog):
             embed.set_footer(text=f"Total Members: {member.guild.member_count}")
             embed.timestamp = datetime.utcnow()
             await logs.send(embed=embed)
-            stat_channel = self.bot.get_channel(gld[9])
-            if stat_channel is None:
-                pass
-            else:
-                await stat_channel.edit(name=f"Members: {member.guild.member_count}")
+            # broken membercount tracker
+            #stat_channel = self.bot.get_channel(gld[9])
+            #if stat_channel is None:
+            #    pass
+            #else:
+            #    await stat_channel.edit(name=f"Members: {member.guild.member_count}")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -97,11 +98,12 @@ class MemberLog(commands.Cog):
                     name=f"**Roles[{len(roles)}]**", value=f"{roles_str}", inline=False
                 )
             await logs.send(embed=embed)
-            stat_channel = self.bot.get_channel(gld[9])
-            if stat_channel is None:
-                pass
-            else:
-                await stat_channel.edit(name=f"Members: {member.guild.member_count}")
+            #broken membercount tracker
+            #stat_channel = self.bot.get_channel(gld[9])
+            #if stat_channel is None:
+            #    pass
+            #else:
+            #   await stat_channel.edit(name=f"Members: {member.guild.member_count}")
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
