@@ -58,10 +58,10 @@ class MemberLog(commands.Cog):
             embed.timestamp = datetime.utcnow()
             await logs.send(embed=embed)
             # broken membercount tracker
-            #stat_channel = self.bot.get_channel(gld[9])
-            #if stat_channel is None:
+            # stat_channel = self.bot.get_channel(gld[9])
+            # if stat_channel is None:
             #    pass
-            #else:
+            # else:
             #    await stat_channel.edit(name=f"Members: {member.guild.member_count}")
 
     @commands.Cog.listener()
@@ -98,11 +98,11 @@ class MemberLog(commands.Cog):
                     name=f"**Roles[{len(roles)}]**", value=f"{roles_str}", inline=False
                 )
             await logs.send(embed=embed)
-            #broken membercount tracker
-            #stat_channel = self.bot.get_channel(gld[9])
-            #if stat_channel is None:
+            # broken membercount tracker
+            # stat_channel = self.bot.get_channel(gld[9])
+            # if stat_channel is None:
             #    pass
-            #else:
+            # else:
             #   await stat_channel.edit(name=f"Members: {member.guild.member_count}")
 
     @commands.Cog.listener()

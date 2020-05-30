@@ -10,13 +10,13 @@ CREATE TABLE IF NOT EXISTS messages (
             created_at timestamp,
             pfp text,
             attachments integer
-            )
-)
+          );
+
 CREATE TABLE IF NOT EXISTS attachment_urls (
             message_id integer,
             attachment text
-            )
-)
+          );
+
 CREATE TABLE IF NOT EXISTS log_channels (
             guildid integer Primary Key,
             joinid integer,
@@ -29,8 +29,8 @@ CREATE TABLE IF NOT EXISTS log_channels (
             avatar integer,
             stat_member integer,
             ljid integer
-            )
-)
+          );
+
 CREATE TABLE IF NOT EXISTS tracking (
             userid integer,
             username text,
@@ -39,5 +39,4 @@ CREATE TABLE IF NOT EXISTS tracking (
             endtime timestamp,
             modid integer,
             modname text
-            )
-)
+          )
