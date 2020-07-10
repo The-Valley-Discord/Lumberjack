@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from database import get_log_by_id, add_guild
+from database import get_log_by_id, add_guild, init_db
 from helpers import add_invite, remove_invite
 from logger import Logger
 from member_log import MemberLog
@@ -15,6 +15,7 @@ bot.add_cog(Logger(bot))
 
 @bot.event
 async def on_ready():
+    init_db()
     await bot.change_presence(
         activity=discord.Activity(
             type=discord.ActivityType.watching, name="with ten thousand eyes."
