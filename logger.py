@@ -30,7 +30,7 @@ class Logger(commands.Cog):
     async def log(self, ctx, log_type, channel: typing.Union[discord.TextChannel, str]):
         if isinstance(channel, str) and channel == "here":
             channel = ctx.channel
-        log_name = set_log_channel(log_type.lower(), ctx.guild.id, channel)
+        log_name = set_log_channel(log_type.lower(), ctx.guild.id, channel.id)
         if len(log_name) == 0:
             await ctx.send(
                 "Incorrect log type. Please use one of the following. Join, Leave, "
@@ -44,8 +44,8 @@ class Logger(commands.Cog):
 
     @log.error
     async def log_error(self, ctx, error):
-        if isinstance(error, commands.BadArgument):
-            ctx.send("Please enter a valid channel")
+        if isinstance(error, commands.BadArgument) or isinstance(error, commands.CommandInvokeError):
+            await ctx.send("Please enter a valid channel")
 
     @commands.command()
     @commands.check_any(has_permissions())
