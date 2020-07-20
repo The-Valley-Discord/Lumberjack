@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AnalysisUIOptions">
+    <option name="SCOPE_TYPE" value="3" />
+    <option name="SHOW_STRUCTURE" value="true" />
+  </component>
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="BRANCH:master" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </select>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="ea2f0ebd-a422-4c26-a11c-9d0adfe2f592" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logger.py" beforeDir="false" afterPath="$PROJECT_DIR$/logger.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/token" beforeDir="false" afterPath="$PROJECT_DIR$/token" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tracker.py" beforeDir="false" afterPath="$PROJECT_DIR$/tracker.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1aHYQCpOBNXA7ojd5DWfRA1Wryj" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
+    <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Anubis" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="run.code.analysis.last.selected.profile" value="aDefault" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="ea2f0ebd-a422-4c26-a11c-9d0adfe2f592" name="Default Changelist" comment="" />
+      <created>1586393967073</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1586393967073</updated>
+      <workItem from="1594475965526" duration="17000" />
+      <workItem from="1594476099014" duration="156000" />
+      <workItem from="1594480588428" duration="8162000" />
+      <workItem from="1594841894244" duration="600000" />
+      <workItem from="1594929153663" duration="2408000" />
+      <workItem from="1595017239173" duration="29000" />
+      <workItem from="1595018682790" duration="684000" />
+      <workItem from="1595160457619" duration="618000" />
+      <workItem from="1595178723195" duration="12000" />
+      <workItem from="1595208817385" duration="1625000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="2" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="CUSTOM_BOOLEAN_PROPERTIES">
+                <map>
+                  <entry key="Show.Git.Branches" value="true" />
+                </map>
+              </option>
+              <option name="FILTERS">
+                <map>
+                  <entry key="branch">
+                    <value>
+                      <list>
+                        <option value="master" />
+                      </list>
+                    </value>
+                  </entry>
+                </map>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="1099" y="541" key="#SQL_Dialects" timestamp="1594476156174">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1099" y="541" key="#SQL_Dialects/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1594476156174" />
+    <state x="1174" y="355" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1594476219652">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1174" y="355" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1594476219652" />
+    <state x="2054" y="591" key="#com.intellij.tools.ToolEditorDialog" timestamp="1586796595164">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="2054" y="591" key="#com.intellij.tools.ToolEditorDialog/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1586796595164" />
+    <state x="1467" y="565" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1586956103223">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1467" y="565" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1586956103223" />
+    <state x="4250" y="355" key="DBNavigator.ProjectSettingsDialog" timestamp="1590841265959">
+      <screen x="3440" y="0" width="2560" height="1400" />
+    </state>
+    <state x="4250" y="355" key="DBNavigator.ProjectSettingsDialog/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@3440.0.2560.1400" timestamp="1590841265959" />
+    <state x="1499" y="455" key="FileChooserDialogImpl" timestamp="1595178732912">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1499" y="455" key="FileChooserDialogImpl/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1595178732912" />
+    <state x="4556" y="455" key="FileChooserDialogImpl/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@3440.0.2560.1400" timestamp="1591552625754" />
+    <state width="2539" height="399" key="GridCell.Tab.0.bottom" timestamp="1590842231955">
+      <screen x="3440" y="0" width="2560" height="1400" />
+    </state>
+    <state width="3419" height="399" key="GridCell.Tab.0.bottom/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1590617849276" />
+    <state width="2539" height="399" key="GridCell.Tab.0.bottom/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@3440.0.2560.1400" timestamp="1590842231955" />
+    <state width="2539" height="399" key="GridCell.Tab.0.center" timestamp="1590842231955">
+      <screen x="3440" y="0" width="2560" height="1400" />
+    </state>
+    <state width="3419" height="399" key="GridCell.Tab.0.center/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1590617849276" />
+    <state width="2539" height="399" key="GridCell.Tab.0.center/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@3440.0.2560.1400" timestamp="1590842231955" />
+    <state width="2539" height="399" key="GridCell.Tab.0.left" timestamp="1590842231955">
+      <screen x="3440" y="0" width="2560" height="1400" />
+    </state>
+    <state width="3419" height="399" key="GridCell.Tab.0.left/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1590617849276" />
+    <state width="2539" height="399" key="GridCell.Tab.0.left/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@3440.0.2560.1400" timestamp="1590842231955" />
+    <state width="2539" height="399" key="GridCell.Tab.0.right" timestamp="1590842231955">
+      <screen x="3440" y="0" width="2560" height="1400" />
+    </state>
+    <state width="3419" height="399" key="GridCell.Tab.0.right/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1590617849276" />
+    <state width="2539" height="399" key="GridCell.Tab.0.right/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@3440.0.2560.1400" timestamp="1590842231955" />
+    <state x="2073" y="372" width="916" height="710" key="SettingsEditor" timestamp="1590841144462">
+      <screen x="0" y="0" width="3440" height="1400" />
+    </state>
+    <state x="1787" y="406" width="997" height="710" key="SettingsEditor/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1589501820848" />
+    <state x="2073" y="372" width="916" height="710" key="SettingsEditor/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@3440.0.2560.1400" timestamp="1590841144462" />
+    <state x="3440" y="0" width="2576" height="920" key="dock-window-1" timestamp="1586716066809">
+      <screen x="3440" y="0" width="2560" height="1400" />
+    </state>
+    <state x="3440" y="0" width="2576" height="920" key="dock-window-1/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1586716066809" />
+    <state x="4469" y="315" width="670" height="678" key="search.everywhere.popup" timestamp="1594847837359">
+      <screen x="3440" y="0" width="2560" height="1400" />
+    </state>
+    <state x="1383" y="315" width="672" height="678" key="search.everywhere.popup/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@0.0.3440.1400" timestamp="1590193073193" />
+    <state x="4469" y="315" width="670" height="678" key="search.everywhere.popup/0.0.3440.1400/-1440.-568.1440.2520/3440.0.2560.1400@3440.0.2560.1400" timestamp="1594847837359" />
+  </component>
+</project>

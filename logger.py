@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import discord
+import typing
 from discord.ext import commands
 
 from database import (
@@ -26,29 +27,25 @@ class Logger(commands.Cog):
 
     @commands.command()
     @commands.check_any(has_permissions())
-    async def log(self, ctx, log_type, arg2):
-        strip = ["<", ">", "#"]
-        str_channel = arg2.lower()
-        for item in strip:
-            str_channel = str_channel.strip(item)
-        if str_channel == "here":
-            channel_id = ctx.channel.id
-        else:
-            channel_id = int(str_channel)
-        logs = self.bot.get_channel(channel_id)
-        log_name = set_log_channel(log_type.lower(), ctx.guild.id, channel_id)
-        if logs is None:
-            await ctx.send("Invalid channel ID")
-        elif len(log_name) == 0:
+    async def log(self, ctx, log_type, channel: typing.Union[discord.TextChannel, str]):
+        if isinstance(channel, str) and channel == "here":
+            channel = ctx.channel
+        log_name = set_log_channel(log_type.lower(), ctx.guild.id, channel.id)
+        if len(log_name) == 0:
             await ctx.send(
                 "Incorrect log type. Please use one of the following. Join, Leave, "
                 "Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, Stats or LJLog"
             )
         else:
-            await ctx.send(f"Updated {log_name} Log Channel to {logs.mention}")
+            await ctx.send(f"Updated {log_name} Log Channel to {channel.mention}")
             # broken member count tracker
             # if log_name == "Stats":
             #    await logs.edit(name=f"Members: {logs.guild.member_count}")
+
+    @log.error
+    async def log_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument) or isinstance(error, commands.CommandInvokeError):
+            await ctx.send("Please enter a valid channel")
 
     @commands.command()
     @commands.check_any(has_permissions())
@@ -70,7 +67,7 @@ class Logger(commands.Cog):
         attachment_bool = False
         if len(attachments) > 0:
             attachment_bool = True
-        mymessage = (
+        message_to_add = (
             message.id,
             message.author.id,
             author,
@@ -83,7 +80,7 @@ class Logger(commands.Cog):
             avatar_url,
             attachment_bool,
         )
-        add_message(mymessage)
+        add_message(message_to_add)
         if attachment_bool:
             add_attachment(message.id, attachments)
 

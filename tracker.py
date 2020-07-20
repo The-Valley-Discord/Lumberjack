@@ -20,14 +20,8 @@ class Tracker(commands.Cog):
 
     @commands.command()
     @commands.check_any(has_permissions())
-    async def track(self, ctx, user, time, channel):
-        strip = ["<", ">", "#", "@", "!"]
-        str_channel = channel.lower()
-        str_user = user.lower()
+    async def track(self, ctx, user: discord.Member, time, channel: discord.TextChannel):
         tracking_time = 0
-        for item in strip:
-            str_channel = str_channel.strip(item)
-            str_user = str_user.strip(item)
         if time[-1].lower() == "d":
             time_limit = timedelta(days=int(time[:-1]))
             tracking_time = datetime.utcnow() + time_limit
@@ -39,20 +33,8 @@ class Tracker(commands.Cog):
             tracking_time = datetime.utcnow() + time_limit
         else:
             pass
-        user = ctx.guild.get_member(int(str_user))
-        channel = self.bot.get_channel(int(str_channel))
-        if user is None:
-            await ctx.send(
-                f"A Valid User was not entered\nFormat is lum.track (user mention/id) (time in d or h) (log channel "
-                f"mention/id)"
-            )
-        elif user.guild_permissions.manage_guild:
+        if user.guild_permissions.manage_guild:
             await ctx.send(f"<\_<\n>\_>\nI can't track a mod.\n Try someone else")
-        elif channel is None:
-            await ctx.send(
-                f"A valid Channel was not entered\nFormat is lum.track (user mention/id) (time in d or h) (log channel "
-                f"mention/id)"
-            )
         elif channel.guild != ctx.guild:
             await ctx.send(
                 f"<\_<\n>\_>\nThat channel is not on this server.\n Try a different one."
@@ -75,27 +57,32 @@ class Tracker(commands.Cog):
             await ctx.send(f"A Tracker has been placed on {username} for {time}")
             await logs.send(f"{modname} placed a tracker on {user.mention} for {time}")
 
+    @track.error
+    async def track_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(
+                "A Valid User or channel was not entered\nFormat is lum.track (user mention/id) (time in d or h) "
+                "(log channel mention/id)"
+            )
+
     @commands.command()
     @commands.check_any(has_permissions())
-    async def untrack(self, ctx, user):
-        strip = ["<", ">", "#", "@", "!"]
-        str_user = user
-        for item in strip:
-            str_user = str_user.strip(item)
-        user = ctx.guild.get_member(int(str_user))
-        if user is None:
+    async def untrack(self, ctx, user: discord.Member):
+        tracker_to_remove = (ctx.guild.id, user.id)
+        modname = f"{ctx.author.name}#{ctx.author.discriminator}"
+        username = f"{user.name}#{user.discriminator}"
+        remove_tracker(tracker_to_remove)
+        await ctx.send(f"{username} is no longer being tracked")
+        gld = get_log_by_id(ctx.guild.id)
+        logs = self.bot.get_channel(gld[10])
+        await logs.send(f"{modname} removed the tracker on {username}")
+
+    @untrack.error
+    async def untrack_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument):
             await ctx.send(
                 f"A Valid User was not entered\nFormat is lum.untrack (user mention/id)"
             )
-        else:
-            tracker_to_remove = (ctx.guild.id, user.id)
-            modname = f"{ctx.author.name}#{ctx.author.discriminator}"
-            username = f"{user.name}#{user.discriminator}"
-            remove_tracker(tracker_to_remove)
-            await ctx.send(f"{username} is no longer being tracked")
-            gld = get_log_by_id(ctx.guild.id)
-            logs = self.bot.get_channel(gld[10])
-            await logs.send(f"{modname} removed the tracker on {username}")
 
     @commands.Cog.listener()
     async def on_message(self, message):
