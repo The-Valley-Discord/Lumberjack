@@ -91,11 +91,12 @@ class Logger(commands.Cog):
         channel = self.bot.get_channel(payload.channel_id)
         msg = get_msg_by_id(payload.message_id)
         author = channel.guild.get_member(msg[1])
-        if logs is None:
+        polyphony_role = 0
+        if author.guild.id == 539925898128785460:
+            polyphony_role = self.bot.get_guild(539925898128785460).get_role(732962687360827472)
+        if logs is None or author is None:
             pass
-        elif author is None:
-            pass
-        elif author.bot:
+        elif author.bot and polyphony_role not in author.roles:
             pass
         else:
             embed = discord.Embed(
@@ -182,13 +183,12 @@ class Logger(commands.Cog):
         logs = self.bot.get_channel(gld[5])
         before = get_msg_by_id(payload.message_id)
         after = await channel.fetch_message(payload.message_id)
-        if logs is None:
+        polyphony_role = 0
+        if after.author.guild.id == 539925898128785460:
+            polyphony_role = self.bot.get_guild(539925898128785460).get_role(732962687360827472)
+        if logs is None or before is None or before[7] == after.clean_content:
             pass
-        elif before is None:
-            pass
-        elif before[7] == after.clean_content:
-            pass
-        elif after.author.bot:
+        elif after.author.bot and polyphony_role not in after.author.roles:
             pass
         else:
             embed = discord.Embed(
