@@ -3,6 +3,9 @@ from datetime import datetime
 import discord
 import typing
 from discord.ext import commands
+import requests
+import os
+from urllib.parse import urlparse
 
 from database import (
     add_message,
@@ -122,19 +125,34 @@ class Logger(commands.Cog):
                 pass
             else:
                 att = get_att_by_id(payload.message_id)
-                attachments = []
+                attachments = ""
                 for attachment in att:
-                    attachments.append(attachment[1])
-                attachments_str = " ".join(attachments)
+                    attachments += f"[{os.path.basename(attachment[1])}]({attachment[1]}), "
                 embed.add_field(
-                    name=f"**Attachments**", value=f"{attachments_str}", inline=False
+                    name=f"**Attachments**", value=f"{attachments}", inline=False
                 )
-                embed.set_image(url=attachments[0])
             embed.set_author(name=f"{author.name}#{author.discriminator} ({author.id})")
             embed.set_thumbnail(url=author.avatar_url)
             embed.set_footer(text=f"")
             embed.timestamp = datetime.utcnow()
             await logs.send(embed=embed)
+            att = get_att_by_id(payload.message_id)
+            for attachment in att:
+                r = requests.get(attachment[1])
+                with open("./file", "wb") as file:
+                    file.write(r.content)
+                try:
+                    await logs.send(
+                        file=discord.File(
+                            "./file",
+                            filename=f"{os.path.basename(attachment[1])}",
+                        ),
+                        delete_after=3600
+                    )
+                except discord.HTTPException:
+                    pass
+
+
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
