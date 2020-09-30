@@ -202,7 +202,7 @@ def add_lumberjack_message(message_id):
 
 def get_old_lumberjack_messages():
     old_date = datetime.utcnow() - timedelta(days=1)
-    c.execute("SELECT from lumberjack_messages WHERE DATETIME(created_at) < :timestamp",
+    c.execute("SELECT * FROM lumberjack_messages WHERE DATETIME(created_at) < :timestamp",
               {"timestamp": old_date})
     return c.fetchall()
 
