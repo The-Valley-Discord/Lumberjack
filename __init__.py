@@ -15,7 +15,6 @@ bot.add_cog(MemberLog(bot))
 bot.add_cog(Tracker(bot))
 bot.add_cog(Logger(bot))
 
-delete_old_db_messages()
 
 @bot.event
 async def on_ready():
