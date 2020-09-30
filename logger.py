@@ -11,6 +11,7 @@ from database import (
     get_att_by_id,
     get_msg_by_id,
     update_msg,
+    add_lumberjack_message
 )
 from helpers import has_permissions, set_log_channel, format_datetime
 
@@ -134,7 +135,8 @@ class Logger(commands.Cog):
             embed.set_thumbnail(url=author.avatar_url)
             embed.set_footer(text=f"")
             embed.timestamp = datetime.utcnow()
-            await logs.send(embed=embed)
+            message = await logs.send(embed=embed)
+            add_lumberjack_message(message.id)
 
     @commands.Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
@@ -166,13 +168,15 @@ class Logger(commands.Cog):
                     f"Author: {message[2]} ({message[1]})\nID:{message[0]}\nContent: {message[7]}\n\n"
                 )
         try:
-            await logs.send(embed=embed)
-            await logs.send(
+            message1 = await logs.send(embed=embed)
+            message2 = await logs.send(
                 file=discord.File(
                     "./log.txt",
                     filename=f"{current_time.strftime(format_datetime)}.txt",
                 )
             )
+            add_lumberjack_message(message1.id)
+            add_lumberjack_message(message2.id)
         except discord.HTTPException:
             pass
 
@@ -182,27 +186,30 @@ class Logger(commands.Cog):
         gld = get_log_by_id(channel.guild.id)
         logs = self.bot.get_channel(gld[5])
         before = get_msg_by_id(payload.message_id)
-        after = await channel.fetch_message(payload.message_id)
+        author = self.bot.get_user(before[1])
         polyphony_role = 0
-        if after.author.guild.id == 539925898128785460:
+        if channel.guild.id == 539925898128785460:
             polyphony_role = self.bot.get_guild(539925898128785460).get_role(732962687360827472)
-        if logs is None or before is None or before[7] == after.clean_content:
+        if 'content' not in payload.data:
+            payload.data['content'] = ''
+        if logs is None or before is None or before[7] == payload.data['content']:
             pass
-        elif after.author.bot and polyphony_role not in after.author.roles:
+        elif author.bot and polyphony_role not in author.roles:
             pass
         else:
             embed = discord.Embed(
-                title=f"**Message edited in #{after.channel}**",
+                title=f"**Message edited in #{channel}**",
                 description=(
-                    f"**Author:** <@!{after.author.id}>\n"
-                    f"**Channel:** <#{after.channel.id}> ({after.channel.id})\n"
-                    f"**Message ID:** {after.id}\n"
-                    f"**[Jump Url]({after.jump_url})**"
+                    f"**Author:** <@!{author.id}>\n"
+                    f"**Channel:** <#{payload.channel_id}> ({payload.channel_id})\n"
+                    f"**Message ID:** {payload.message_id}\n"
+                    f"**[Jump Url](https://discordapp.com/channels/"
+                    f"{channel.guild.id}/{payload.channel_id}/{payload.message_id})**"
                 ),
                 color=0xFFC704,
             )
             embed.set_author(
-                name=f"{after.author.name}#{after.author.discriminator} ({after.author.id})"
+                name=f"{author.name}#{author.discriminator} ({author.id})"
             )
             if len(before[7]) == 0:
                 embed.add_field(name=f"**Before**", value=f"`Blank`", inline=False)
@@ -214,21 +221,21 @@ class Logger(commands.Cog):
                 prt_2 = prts[1024:]
                 embed.add_field(name=f"**Before**", value=f"{prt_1}", inline=False)
                 embed.add_field(name=f"Continued", value=f"{prt_2}")
-            if len(after.content) == 0:
+            if len(payload.data['content']) == 0:
                 embed.add_field(name=f"**After**", value=f"`Blank`", inline=False)
-            elif len(after.content) <= 1024:
+            elif len(payload.data['content']) <= 1024:
                 embed.add_field(
-                    name=f"**After**", value=f"{after.content} ", inline=False
+                    name=f"**After**", value=f"{payload.data['content']} ", inline=False
                 )
             else:
-                prts = after.content
+                prts = payload.data['content']
                 prt_1 = prts[:1024]
                 prt_2 = prts[1024:]
                 embed.add_field(name=f"**After**", value=f"{prt_1}", inline=False)
                 embed.add_field(name=f"Continued", value=f"{prt_2}")
-            embed.set_thumbnail(url=after.author.avatar_url)
-            embed.set_footer(text=f"")
+            embed.set_thumbnail(url=author.avatar_url)
             embed.timestamp = datetime.utcnow()
-            await logs.send(embed=embed)
-            content = after.content
+            message = await logs.send(embed=embed)
+            add_lumberjack_message(message.id)
+            content = payload.data['content']
             update_msg(payload.message_id, content)
