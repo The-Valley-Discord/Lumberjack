@@ -39,4 +39,10 @@ CREATE TABLE IF NOT EXISTS tracking (
             endtime timestamp,
             modid integer,
             modname text
-          )
+          );
+
+CREATE TABLE IF NOT EXISTS lumberjack_messages (
+          message_id integer primary key,
+          channel_id integer,
+          created_at timestamp
+        )

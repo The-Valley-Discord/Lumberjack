@@ -136,20 +136,23 @@ class Tracker(commands.Cog):
     async def on_raw_message_edit(self, payload):
         channel = self.bot.get_channel(payload.channel_id)
         before = get_msg_by_id(payload.message_id)
-        after = await channel.fetch_message(payload.message_id)
-        tracked = (after.guild.id, after.author.id)
+        author = self.bot.get_user(before[1])
+        tracked = (channel.guild.id, before[1])
         tracker = get_tracked_by_id(tracked)
+        if 'content' not in payload.data:
+            payload.data['content'] = ''
         if tracker is None:
             pass
         else:
             channel = self.bot.get_channel(tracker[3])
             embed = discord.Embed(
-                description=f"**[Jump Url]({after.jump_url})**", color=0xFFF1D7,
+                description=f"**[Jump Url](https://discordapp.com/channels/"
+                            f"{channel.guild.id}/{payload.channel_id}/{payload.message_id})**", color=0xFFF1D7,
             )
-            embed.set_author(name=f"#{after.channel.name}")
+            embed.set_author(name=f"#{channel.name}")
             embed.set_footer(
                 text=f"{tracker[1]}\t({tracker[0]})\nMessage sent",
-                icon_url=after.author.avatar_url,
+                icon_url=author.avatar_url,
             )
             embed.timestamp = datetime.utcnow()
             if len(before[7]) == 0:
@@ -162,14 +165,14 @@ class Tracker(commands.Cog):
                 prt_2 = prts[1024:]
                 embed.add_field(name=f"**Before**", value=f"{prt_1}", inline=False)
                 embed.add_field(name=f"Continued", value=f"{prt_2}")
-            if len(after.content) == 0:
+            if len(payload.data['content']) == 0:
                 embed.add_field(name=f"**After**", value=f"`Blank`", inline=False)
-            elif len(after.content) <= 1024:
+            elif len(payload.data['content']) <= 1024:
                 embed.add_field(
-                    name=f"**After**", value=f"{after.content} ", inline=False
+                    name=f"**After**", value=f"{payload.data['content']} ", inline=False
                 )
             else:
-                prts = after.content
+                prts = payload.data['content']
                 prt_1 = prts[:1024]
                 prt_2 = prts[1024:]
                 embed.add_field(name=f"**After**", value=f"{prt_1}", inline=False)
@@ -211,7 +214,7 @@ class Tracker(commands.Cog):
             elif after.channel != before.channel:
                 embed = discord.Embed(
                     description=f"**From:** {before.channel.name}\n"
-                    f"**To:** {after.channel.name}",
+                                f"**To:** {after.channel.name}",
                     color=0xFF0080,
                 )
                 embed.set_author(name="Moved Voice Channels")
@@ -254,8 +257,8 @@ class Tracker(commands.Cog):
                 pass
             else:
                 if (
-                    before.name != after.name
-                    or before.discriminator != after.discriminator
+                        before.name != after.name
+                        or before.discriminator != after.discriminator
                 ):
                     channel = self.bot.get_channel(tracker[3])
                     if channel is None:
