@@ -1,5 +1,6 @@
 import logging as lumberlog
 import sqlite3
+from datetime import datetime, timedelta
 
 conn = sqlite3.connect("log.db")
 
@@ -53,6 +54,16 @@ def add_attachment(message_id, attachments):
             "INSERT INTO attachment_urls VALUES (:message_id, :attachment)",
             {"message_id": message_id, "attachment": attachment},
         )
+
+
+def delete_old_db_messages():
+    old_date = datetime.utcnow() - timedelta(days=31)
+    c.execute("DELETE FROM messages WHERE DATETIME(created_at) < :timestamp",
+              {"timestamp": old_date})
+    c.execute("SELECT min(id) FROM messages")
+    latest_message = c.fetchone()
+    c.execute('DELETE FROM attachment_urls where message_id < :id', {
+        "id": latest_message[0]})
 
 
 def add_guild(guild_id):
@@ -180,3 +191,22 @@ def remove_tracker(tracker_to_remove):
     c.execute(sql, tracker_to_remove)
     conn.commit()
     return c.lastrowid
+
+
+def add_lumberjack_message(message):
+    sql = """INSERT INTO lumberjack_messages (message_id, channel_id, created_at) 
+           VALUES(?,?,?) """
+    c.execute(sql, (message.id, message.channel.id, datetime.utcnow()))
+    conn.commit()
+
+
+def get_old_lumberjack_messages():
+    old_date = datetime.utcnow() - timedelta(days=31)
+    c.execute("SELECT * FROM lumberjack_messages WHERE DATETIME(created_at) < :timestamp",
+              {"timestamp": old_date})
+    return c.fetchall()
+
+
+def delete_lumberjack_messages_from_db(message_id):
+    c.execute("DELETE FROM lumberjack_messages WHERE message_id=:message_id",
+              {"message_id": message_id})
