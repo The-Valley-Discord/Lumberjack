@@ -57,7 +57,7 @@ def add_attachment(message_id, attachments):
 
 
 def delete_old_db_messages():
-    old_date = datetime.utcnow() - timedelta(days=2)
+    old_date = datetime.utcnow() - timedelta(days=31)
     c.execute("DELETE FROM messages WHERE DATETIME(created_at) < :timestamp",
               {"timestamp": old_date})
     c.execute("SELECT min(id) FROM messages")
@@ -193,15 +193,15 @@ def remove_tracker(tracker_to_remove):
     return c.lastrowid
 
 
-def add_lumberjack_message(message_id):
-    sql = """INSERT INTO lumberjack_messages (message_id, created_at) 
-           VALUES(?,?) """
-    c.execute(sql, (message_id, datetime.utcnow()))
+def add_lumberjack_message(message):
+    sql = """INSERT INTO lumberjack_messages (message_id, channel_id, created_at) 
+           VALUES(?,?,?) """
+    c.execute(sql, (message.id, message.channel.id, datetime.utcnow()))
     conn.commit()
 
 
 def get_old_lumberjack_messages():
-    old_date = datetime.utcnow() - timedelta(days=1)
+    old_date = datetime.utcnow() - timedelta(days=31)
     c.execute("SELECT * FROM lumberjack_messages WHERE DATETIME(created_at) < :timestamp",
               {"timestamp": old_date})
     return c.fetchall()

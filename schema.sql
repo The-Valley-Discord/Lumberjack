@@ -43,5 +43,6 @@ CREATE TABLE IF NOT EXISTS tracking (
 
 CREATE TABLE IF NOT EXISTS lumberjack_messages (
           message_id integer primary key,
+          channel_id integer,
           created_at timestamp
         )

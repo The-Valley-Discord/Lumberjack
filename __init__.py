@@ -1,7 +1,14 @@
 import discord
 from discord.ext import commands
 
-from database import get_log_by_id, add_guild, init_db, delete_old_db_messages, get_old_lumberjack_messages, delete_lumberjack_messages_from_db
+from database import (
+    get_log_by_id,
+    add_guild,
+    init_db,
+    delete_old_db_messages,
+    get_old_lumberjack_messages,
+    delete_lumberjack_messages_from_db,
+)
 from helpers import add_invite, remove_invite
 from logger import Logger
 from member_log import MemberLog
@@ -64,19 +71,18 @@ async def on_invite_delete(invite):
     remove_invite(invite)
 
 
-async def delete_old_lumberjack_messages():
-    messages = get_old_lumberjack_messages()
-    for message_id in messages:
-        message = await bot.user.fetch_message(message_id)
-        await message.delete()
-        delete_lumberjack_messages_from_db(message_id)
-
-
 @bot.event
-async def on_message_delete(payload):
+async def on_message_delete(message):
     delete_old_db_messages()
-    await delete_old_lumberjack_messages()
-
+    db_messages = get_old_lumberjack_messages()
+    for message_id in db_messages:
+        channel = bot.get_channel(message_id[1])
+        try:
+            lum_message = await channel.fetch_message(message_id[0])
+            await lum_message.delete()
+        except discord.NotFound:
+            pass
+        delete_lumberjack_messages_from_db(message_id[0])
 
 
 @bot.command()
