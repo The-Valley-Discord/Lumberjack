@@ -3,7 +3,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from database import get_log_by_id
+from database import get_log_by_id, add_lumberjack_message
 from helpers import return_time_delta_string, get_invite, update_invite, format_date
 
 
@@ -127,7 +127,8 @@ class MemberLog(commands.Cog):
             embed.set_thumbnail(url=after.avatar_url)
             embed.set_footer(text=f"")
             embed.timestamp = datetime.utcnow()
-            await logs.send(embed=embed)
+            message = await logs.send(embed=embed)
+            add_lumberjack_message(message)
 
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
@@ -157,7 +158,8 @@ class MemberLog(commands.Cog):
                         embed.set_thumbnail(url=after.avatar_url)
                         embed.set_footer(text=f"")
                         embed.timestamp = datetime.utcnow()
-                        await logs.send(embed=embed)
+                        message = await logs.send(embed=embed)
+                        add_lumberjack_message(message)
                 if before.avatar != after.avatar:
                     logs = self.bot.get_channel(gld[8])
                     if logs is None:
@@ -178,4 +180,5 @@ class MemberLog(commands.Cog):
                         embed.set_footer(text=f"")
                         embed.set_image(url=after.avatar_url_as(size=128))
                         embed.timestamp = datetime.utcnow()
-                        await logs.send(embed=embed)
+                        message = await logs.send(embed=embed)
+                        add_lumberjack_message(message)
