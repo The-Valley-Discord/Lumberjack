@@ -7,9 +7,9 @@ from database import (
     init_db,
     delete_old_db_messages,
     get_old_lumberjack_messages,
-    delete_lumberjack_messages_from_db,
+    delete_lumberjack_messages_from_db, add_all_guilds,
 )
-from helpers import add_invite, remove_invite
+from helpers import add_invite, remove_invite, add_all_invites
 from logger import Logger
 from member_log import MemberLog
 from tracker import Tracker
@@ -17,30 +17,23 @@ from tracker import Tracker
 intents = discord.Intents.default()
 intents.members = True
 
-bot = commands.Bot(command_prefix="lum.", intents=intents)
-bot.add_cog(MemberLog(bot))
-bot.add_cog(Tracker(bot))
-bot.add_cog(Logger(bot))
+bot = commands.Bot(command_prefix="bum.", intents=intents, activity=discord.Activity(
+            type=discord.ActivityType.watching, name="with ten thousand eyes."
+        ))
+
+
+if __name__ == "__main__":
+    bot.add_cog(MemberLog(bot))
+    bot.add_cog(Tracker(bot))
+    bot.add_cog(Logger(bot))
+    init_db()
+    add_all_guilds(bot)
 
 
 @bot.event
 async def on_ready():
-    init_db()
-    await bot.change_presence(
-        activity=discord.Activity(
-            type=discord.ActivityType.watching, name="with ten thousand eyes."
-        )
-    )
-    for guild in bot.guilds:
-        gld = get_log_by_id(guild.id)
-        if gld is None:
-            new_guild = (guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-            add_guild(new_guild)
-        else:
-            pass
-        for invite in await guild.invites():
-            add_invite(invite)
     print("Bot is ready.")
+    await add_all_invites(bot)
 
 
 @bot.event
@@ -49,10 +42,7 @@ async def on_guild_join(guild):
         add_invite(invite)
         gld = get_log_by_id(guild.id)
         if gld is None:
-            new_guild = (guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-            add_guild(new_guild)
-        else:
-            pass
+            add_guild(guild)
 
 
 @bot.event

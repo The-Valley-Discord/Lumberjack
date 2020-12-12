@@ -11,6 +11,7 @@ from database import (
     get_msg_by_id,
 )
 from helpers import message_splitter, has_permissions
+from models import Tracking
 
 
 class Tracker(commands.Cog):
@@ -42,18 +43,16 @@ class Tracker(commands.Cog):
         else:
             username = f"{user.name}#{user.discriminator}"
             modname = f"{ctx.author.name}#{ctx.author.discriminator}"
-            new_tracker = (
-                user.id,
-                username,
-                ctx.guild.id,
-                channel.id,
-                tracking_time,
-                ctx.author.id,
-                modname,
-            )
+
             gld = get_log_by_id(ctx.guild.id)
-            logs = self.bot.get_channel(gld[10])
-            add_tracker(new_tracker)
+            logs = self.bot.get_channel(gld.lj_id)
+            add_tracker(Tracking(user.id,
+                                 username,
+                                 ctx.guild.id,
+                                 channel.id,
+                                 tracking_time,
+                                 ctx.author.id,
+                                 modname, ))
             await ctx.send(f"A Tracker has been placed on {username} for {time}")
             await logs.send(f"{modname} placed a tracker on {user.mention} for {time}")
 
@@ -68,13 +67,12 @@ class Tracker(commands.Cog):
     @commands.command()
     @commands.check_any(has_permissions())
     async def untrack(self, ctx, user: discord.Member):
-        tracker_to_remove = (ctx.guild.id, user.id)
         modname = f"{ctx.author.name}#{ctx.author.discriminator}"
         username = f"{user.name}#{user.discriminator}"
-        remove_tracker(tracker_to_remove)
+        remove_tracker(ctx.guild.id, user.id)
         await ctx.send(f"{username} is no longer being tracked")
         gld = get_log_by_id(ctx.guild.id)
-        logs = self.bot.get_channel(gld[10])
+        logs = self.bot.get_channel(gld.lj_id)
         await logs.send(f"{modname} removed the tracker on {username}")
 
     @untrack.error
@@ -86,26 +84,25 @@ class Tracker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        tracked = (message.guild.id, message.author.id)
-        tracker = get_tracked_by_id(tracked)
+        tracker = get_tracked_by_id(message.guild.id, message.author.id)
         if tracker is None:
             pass
         else:
             attachments = [
                 f"{attachment.proxy_url}" for attachment in message.attachments
             ]
-            end_time = datetime.strptime(tracker[4], "%Y-%m-%d %H:%M:%S.%f")
-            channel = self.bot.get_channel(tracker[3])
+            end_time = datetime.strptime(tracker.end_time, "%Y-%m-%d %H:%M:%S.%f")
+            channel = self.bot.get_channel(tracker.channel_id)
             if end_time < datetime.utcnow():
-                remove_tracker(tracked)
+                remove_tracker(message.guild.id, message.author.id)
                 embed = discord.Embed(
-                    description=f"""Tracker on {tracker[1]} has expired""",
+                    description=f"""Tracker on {tracker.username} has expired""",
                     color=0xFFF1D7,
                 )
                 embed.set_author(name="Tracker Expired")
                 embed.timestamp = datetime.utcnow()
                 gld = get_log_by_id(message.channel.guild.id)
-                logs = self.bot.get_channel(gld[10])
+                logs = self.bot.get_channel(gld.lj_id)
                 await logs.send(embed=embed)
                 await channel.send(embed=embed)
             else:
@@ -115,7 +112,7 @@ class Tracker(commands.Cog):
                     color=0xFFF1D7,
                 )
                 embed.set_footer(
-                    text=f"{tracker[1]}\t({tracker[0]})\nMessage sent",
+                    text=f"{tracker.username}\t({tracker.user_id})\nMessage sent",
                     icon_url=f"{message.author.avatar_url}",
                 )
                 embed.set_author(name=f"#{message.channel.name}")
@@ -136,31 +133,30 @@ class Tracker(commands.Cog):
     async def on_raw_message_edit(self, payload):
         channel = self.bot.get_channel(payload.channel_id)
         before = get_msg_by_id(payload.message_id)
-        author = self.bot.get_user(before[1])
-        tracked = (channel.guild.id, before[1])
-        tracker = get_tracked_by_id(tracked)
+        author = self.bot.get_user(before.author)
+        tracker = get_tracked_by_id(channel.guild.id, before.author.id)
         if 'content' not in payload.data:
             payload.data['content'] = ''
         if tracker is None:
             pass
         else:
-            channel = self.bot.get_channel(tracker[3])
+            channel = self.bot.get_channel(tracker.channel_id)
             embed = discord.Embed(
                 description=f"**[Jump Url](https://discordapp.com/channels/"
                             f"{channel.guild.id}/{payload.channel_id}/{payload.message_id})**", color=0xFFF1D7,
             )
             embed.set_author(name=f"#{channel.name}")
             embed.set_footer(
-                text=f"{tracker[1]}\t({tracker[0]})\nMessage sent",
+                text=f"{tracker.username}\t({tracker.user_id})\nMessage sent",
                 icon_url=author.avatar_url,
             )
             embed.timestamp = datetime.utcnow()
-            if len(before[7]) == 0:
+            if len(before.clean_content) == 0:
                 embed.add_field(name=f"**Before**", value=f"`Blank`", inline=False)
-            elif len(before[7]) <= 1024:
-                embed.add_field(name=f"**Before**", value=f"{before[7]} ", inline=False)
+            elif len(before.clean_content) <= 1024:
+                embed.add_field(name=f"**Before**", value=f"{before.clean_content} ", inline=False)
             else:
-                prts = before[7]
+                prts = before.clean_content
                 prt_1 = prts[:1024]
                 prt_2 = prts[1024:]
                 embed.add_field(name=f"**Before**", value=f"{prt_1}", inline=False)
@@ -181,12 +177,11 @@ class Tracker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        tracked = (member.guild.id, member.id)
-        tracker = get_tracked_by_id(tracked)
+        tracker = get_tracked_by_id(member.guild.id, member.id)
         if tracker is None:
             pass
         else:
-            channel = self.bot.get_channel(tracker[3])
+            channel = self.bot.get_channel(tracker.channel_id)
             if before.channel == after.channel:
                 pass
             elif tracker is None:
@@ -197,7 +192,7 @@ class Tracker(commands.Cog):
                 )
                 embed.set_author(name="Joined Voice Channel")
                 embed.set_footer(
-                    text=f"{tracker[1]}\n({member.id}) ", icon_url=member.avatar_url
+                    text=f"{tracker.username}\n({member.id}) ", icon_url=member.avatar_url
                 )
                 embed.timestamp = datetime.utcnow()
                 await channel.send(embed=embed)
@@ -207,7 +202,7 @@ class Tracker(commands.Cog):
                 )
                 embed.set_author(name="Left Voice Channel")
                 embed.set_footer(
-                    text=f"{tracker[1]}\n({member.id})", icon_url=member.avatar_url
+                    text=f"{tracker.username}\n({member.id})", icon_url=member.avatar_url
                 )
                 embed.timestamp = datetime.utcnow()
                 await channel.send(embed=embed)
@@ -219,7 +214,7 @@ class Tracker(commands.Cog):
                 )
                 embed.set_author(name="Moved Voice Channels")
                 embed.set_footer(
-                    text=f"{tracker[1]}\n({member.id})", icon_url=member.avatar_url
+                    text=f"{tracker.username}\n({member.id})", icon_url=member.avatar_url
                 )
                 embed.timestamp = datetime.utcnow()
                 await channel.send(embed=embed)
@@ -228,12 +223,11 @@ class Tracker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        tracked = (after.guild.id, after.id)
-        tracker = get_tracked_by_id(tracked)
+        tracker = get_tracked_by_id(after.guild.id, after.id)
         if tracker is None:
             pass
         else:
-            channel = self.bot.get_channel(tracker[3])
+            channel = self.bot.get_channel(tracker.channel_id)
             if before.nick == after.nick:
                 pass
             elif channel is None:
@@ -251,8 +245,7 @@ class Tracker(commands.Cog):
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
         for guild in self.bot.guilds:
-            tracked = (guild.id, after.id)
-            tracker = get_tracked_by_id(tracked)
+            tracker = get_tracked_by_id(guild.id, after.id)
             if tracker is None:
                 pass
             else:
@@ -260,7 +253,7 @@ class Tracker(commands.Cog):
                         before.name != after.name
                         or before.discriminator != after.discriminator
                 ):
-                    channel = self.bot.get_channel(tracker[3])
+                    channel = self.bot.get_channel(tracker.channel_id)
                     if channel is None:
                         pass
                     else:
@@ -276,7 +269,7 @@ class Tracker(commands.Cog):
                         embed.timestamp = datetime.utcnow()
                         await channel.send(embed=embed)
                 if before.avatar != after.avatar:
-                    channel = self.bot.get_channel(tracker[3])
+                    channel = self.bot.get_channel(tracker.channel_id)
                     if channel is None:
                         pass
                     else:

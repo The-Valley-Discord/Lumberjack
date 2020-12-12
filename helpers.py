@@ -1,4 +1,9 @@
+from datetime import timedelta
+from typing import List
+
+from discord import Invite
 from discord.ext import commands
+from discord.ext.commands import Bot
 
 import database
 
@@ -16,60 +21,64 @@ format_time = "%I:%M %p"
 format_datetime = "%b %d, %Y  %I:%M %p"
 
 
-def add_invite(invite):
+def add_invite(invite: Invite):
     before_invites[invite.id] = invite
 
 
-def get_invite(invite_id):
+def get_invite(invite_id: int) -> Invite:
     return before_invites[invite_id]
 
 
-def update_invite(invite):
+def update_invite(invite: Invite):
     d = {invite.id: invite}
     before_invites.update(d)
 
 
-def remove_invite(invite):
+def remove_invite(invite: Invite):
     before_invites.pop(invite.id)
 
 
-def set_log_channel(log_type, guild_id, channel_id):
+async def add_all_invites(bot: Bot):
+    for guild in bot.guilds:
+        for invite in await guild.invites():
+            add_invite(invite)
+
+
+def set_log_channel(log_type: str, guild_id: int, channel_id: int) -> str:
+    logs = database.get_log_by_id(guild_id)
+    log_return = ""
     if log_type == "join":
-        database.set_join_channel(guild_id, channel_id)
-        return "Join"
+        logs.join_id = channel_id
+        log_return = "Join"
     elif log_type == "leave":
-        database.set_leave_channel(guild_id, channel_id)
-        return "Leave"
+        logs.leave_id = channel_id
+        log_return = "Leave"
     elif log_type == "delete":
-        database.set_delete_channel(guild_id, channel_id)
-        return "Delete"
+        logs.delete_id = channel_id
+        log_return = "Delete"
     elif log_type == "bulk_delete":
-        database.set_bulk_delete_channel(guild_id, channel_id)
-        return "Bulk Delete"
+        logs.delete_bulk = channel_id
+        log_return = "Bulk Delete"
     elif log_type == "edit":
-        database.set_edit_channel(guild_id, channel_id)
-        return "Edit"
+        logs.edit = channel_id
+        log_return = "Edit"
     elif log_type == "username":
-        database.set_username_channel(guild_id, channel_id)
-        return "Username"
+        logs.username = channel_id
+        log_return = "Username"
     elif log_type == "nickname":
-        database.set_nickname_channel(guild_id, channel_id)
-        return "Nickname"
+        logs.nickname = channel_id
+        log_return = "Nickname"
     elif log_type == "avatar":
-        database.set_avatar_channel(guild_id, channel_id)
-        return "Avatar"
-    # broken member tracker
-    # elif log_type == "stats":
-    #    database.set_stats_channel(guild_id, channel_id)
-    #    return "Stats"
+        logs.avatar = channel_id
+        log_return = "Avatar"
     elif log_type == "ljlog":
-        database.set_ljlog_channel(guild_id, channel_id)
-        return "Lumberjack Logs"
-    else:
-        return ""
+        logs.lj_id = channel_id
+        log_return = "Lumberjack Logs"
+    database.update_log_channels(logs)
+    return log_return
 
 
-def message_splitter(content, cap):
+def message_splitter(content: str, cap: int) -> List:
     if len(content) == 0:
         pass
     elif len(content) <= cap:
@@ -80,7 +89,7 @@ def message_splitter(content, cap):
         return [prt_1, prt_2]
 
 
-def return_time_delta_string(account_age):
+def return_time_delta_string(account_age: timedelta) -> str:
     time_string = ""
     if account_age.days > 7:
         return time_string

@@ -6,7 +6,6 @@ from discord.ext import commands
 
 from database import (
     add_message,
-    add_attachment,
     get_log_by_id,
     get_att_by_id,
     get_msg_by_id,
@@ -39,9 +38,6 @@ class Logger(commands.Cog):
             )
         else:
             await ctx.send(f"Updated {log_name} Log Channel to {channel.mention}")
-            # broken member count tracker
-            # if log_name == "Stats":
-            #    await logs.edit(name=f"Members: {logs.guild.member_count}")
 
     @log.error
     async def log_error(self, ctx, error):
@@ -62,37 +58,16 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        attachments = [f"{attachment.proxy_url}" for attachment in message.attachments]
-        author = f"{message.author.name}#{message.author.discriminator}"
-        avatar_url = f"{message.author.avatar_url}"
-        attachment_bool = False
-        if len(attachments) > 0:
-            attachment_bool = True
-        message_to_add = (
-            message.id,
-            message.author.id,
-            author,
-            message.author.display_name,
-            message.channel.id,
-            message.channel.name,
-            message.guild.id,
-            message.clean_content,
-            message.created_at,
-            avatar_url,
-            attachment_bool,
-        )
-        add_message(message_to_add)
-        if attachment_bool:
-            add_attachment(message.id, attachments)
+        add_message(message)
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
         gld = get_log_by_id(payload.guild_id)
-        logs = self.bot.get_channel(gld[3])
+        logs = self.bot.get_channel(gld.delete_id)
         channel = self.bot.get_channel(payload.channel_id)
         msg = get_msg_by_id(payload.message_id)
         try:
-            author = channel.guild.get_member(msg[1])
+            author = channel.guild.get_member(msg.author.id)
             polyphony_role = 0
             if author.guild.id == 539925898128785460:
                 polyphony_role = self.bot.get_guild(539925898128785460).get_role(732962687360827472)
@@ -110,17 +85,17 @@ class Logger(commands.Cog):
                     ),
                     color=0xD90000,
                 )
-                if len(msg[7]) == 0:
+                if len(msg.clean_content) == 0:
                     pass
-                elif len(msg[7]) <= 1024:
-                    embed.add_field(name=f"**Content**", value=f"{msg[7]}", inline=False)
+                elif len(msg.clean_content) <= 1024:
+                    embed.add_field(name=f"**Content**", value=f"{msg.clean_content}", inline=False)
                 else:
-                    parts = msg[7]
+                    parts = msg.clean_content
                     prt_1 = parts[:1024]
                     prt_2 = parts[1024:]
                     embed.add_field(name=f"**Content**", value=f"{prt_1}", inline=False)
                     embed.add_field(name=f"Continued", value=f"{prt_2}")
-                if not msg[10]:
+                if len(msg.attachments) == 0:
                     pass
                 else:
                     att = get_att_by_id(payload.message_id)
@@ -147,13 +122,13 @@ class Logger(commands.Cog):
         message_ids = sorted(payload.message_ids)
         for message_id in message_ids:
             message = get_msg_by_id(message_id)
-            if message is None or self.bot.user.id == message[1]:
+            if message is None or self.bot.user.id == message.author.id:
                 pass
             else:
                 messages.append(message)
         if len(messages) != 0:
             gld = get_log_by_id(payload.guild_id)
-            logs = self.bot.get_channel(gld[4])
+            logs = self.bot.get_channel(gld.delete_bulk)
             current_time = datetime.utcnow()
             purged_channel = self.bot.get_channel(payload.channel_id)
             embed = discord.Embed(
@@ -169,7 +144,8 @@ class Logger(commands.Cog):
             with open("./log.txt", "w", encoding="utf-8") as file:
                 for message in messages:
                     file.writelines(
-                        f"Author: {message[2]} ({message[1]})\nID:{message[0]}\nContent: {message[7]}\n\n"
+                        f"Author: {message.author.name} ({message.author.id})\nID:{message.id}\n"
+                        f"Content: {message.clean_content}\n\n"
                     )
             try:
                 message1 = await logs.send(embed=embed)
@@ -188,16 +164,16 @@ class Logger(commands.Cog):
     async def on_raw_message_edit(self, payload):
         channel = self.bot.get_channel(payload.channel_id)
         gld = get_log_by_id(channel.guild.id)
-        logs = self.bot.get_channel(gld[5])
+        logs = self.bot.get_channel(gld.edit)
         before = get_msg_by_id(payload.message_id)
         try:
-            author = channel.guild.get_member(before[1])
+            author = channel.guild.get_member(before.author.id)
             polyphony_role = 0
             if channel.guild.id == 539925898128785460:
                 polyphony_role = self.bot.get_guild(539925898128785460).get_role(732962687360827472)
             if 'content' not in payload.data:
                 payload.data['content'] = ''
-            if logs is None or before is None or before[7] == payload.data['content']:
+            if logs is None or before is None or before.clean_content == payload.data['content']:
                 pass
             elif author.bot and polyphony_role not in author.roles:
                 pass
@@ -216,12 +192,12 @@ class Logger(commands.Cog):
                 embed.set_author(
                     name=f"{author.name}#{author.discriminator} ({author.id})"
                 )
-                if len(before[7]) == 0:
+                if len(before.clean_content) == 0:
                     embed.add_field(name=f"**Before**", value=f"`Blank`", inline=False)
-                elif len(before[7]) <= 1024:
-                    embed.add_field(name=f"**Before**", value=f"{before[7]} ", inline=False)
+                elif len(before.clean_content) <= 1024:
+                    embed.add_field(name=f"**Before**", value=f"{before.clean_content} ", inline=False)
                 else:
-                    prts = before[7]
+                    prts = before.clean_content
                     prt_1 = prts[:1024]
                     prt_2 = prts[1024:]
                     embed.add_field(name=f"**Before**", value=f"{prt_1}", inline=False)

@@ -15,7 +15,7 @@ class MemberLog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member):
         gld = get_log_by_id(member.guild.id)
-        logs = self.bot.get_channel(gld[1])
+        logs = self.bot.get_channel(gld.join_id)
         account_age = datetime.utcnow() - member.created_at
         invite_used = "Vanity URL"
         invite_uses = ""
@@ -67,7 +67,7 @@ class MemberLog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         gld = get_log_by_id(member.guild.id)
-        logs = self.bot.get_channel(gld[2])
+        logs = self.bot.get_channel(gld.leave_id)
         if logs is None:
             pass
         else:
@@ -108,7 +108,7 @@ class MemberLog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         gld = get_log_by_id(after.guild.id)
-        logs = self.bot.get_channel(gld[7])
+        logs = self.bot.get_channel(gld.nickname)
         if before.nick == after.nick:
             pass
         elif logs is None:
@@ -139,7 +139,7 @@ class MemberLog(commands.Cog):
                     before.name != after.name
                     or before.discriminator != after.discriminator
                 ):
-                    logs = self.bot.get_channel(gld[6])
+                    logs = self.bot.get_channel(gld.username)
                     if logs is None:
                         pass
                     else:
@@ -161,7 +161,7 @@ class MemberLog(commands.Cog):
                         message = await logs.send(embed=embed)
                         add_lumberjack_message(message)
                 if before.avatar != after.avatar:
-                    logs = self.bot.get_channel(gld[8])
+                    logs = self.bot.get_channel(gld.avatar)
                     if logs is None:
                         pass
                     else:
