@@ -1,11 +1,11 @@
 from datetime import timedelta
 from typing import List
 
+import discord
 from discord import Invite
 from discord.ext import commands
-from discord.ext.commands import Bot
 
-import database
+from Helpers import database
 
 
 def has_permissions():
@@ -25,8 +25,11 @@ def add_invite(invite: Invite):
     before_invites[invite.id] = invite
 
 
-def get_invite(invite_id: int) -> Invite:
-    return before_invites[invite_id]
+def get_invite(invite_id: str) -> Invite:
+    try:
+        return before_invites[invite_id]
+    except KeyError:
+        raise Exception("No Invite Found")
 
 
 def update_invite(invite: Invite):
@@ -35,13 +38,25 @@ def update_invite(invite: Invite):
 
 
 def remove_invite(invite: Invite):
-    before_invites.pop(invite.id)
+    try:
+        before_invites.pop(invite.id)
+    except KeyError:
+        raise Exception("No Invite Found")
 
 
-async def add_all_invites(bot: Bot):
+async def add_all_invites(bot: discord.Client):
     for guild in bot.guilds:
-        for invite in await guild.invites():
-            add_invite(invite)
+        await add_all_guild_invites(guild)
+
+
+async def add_all_guild_invites(guild: discord.Guild):
+    for invite in await guild.invites():
+        add_invite(invite)
+
+
+async def remove_all_guild_invites(guild: discord.Guild):
+    for invite in await guild.invites():
+        remove_invite(invite)
 
 
 def set_log_channel(log_type: str, guild_id: int, channel_id: int) -> str:

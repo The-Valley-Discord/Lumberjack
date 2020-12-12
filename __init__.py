@@ -1,18 +1,24 @@
 import discord
 from discord.ext import commands
 
-from database import (
-    get_log_by_id,
-    add_guild,
+from Helpers.database import (
     init_db,
     delete_old_db_messages,
     get_old_lumberjack_messages,
-    delete_lumberjack_messages_from_db, add_all_guilds,
+    delete_lumberjack_messages_from_db, add_all_guilds, add_guild,
 )
-from helpers import add_invite, remove_invite, add_all_invites
-from logger import Logger
-from member_log import MemberLog
-from tracker import Tracker
+from Helpers.helpers import add_invite, remove_invite, add_all_invites, add_all_guild_invites, remove_all_guild_invites
+from Cogs.logger import Logger
+from Cogs.member_log import MemberLog
+from Cogs.tracker import Tracker
+
+import logging
+
+logs = logging.getLogger("Lumberjack")
+logs.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename="Logs/lj.log", encoding="utf-8", mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logs.addHandler(handler)
 
 intents = discord.Intents.default()
 intents.members = True
@@ -23,9 +29,9 @@ bot = commands.Bot(command_prefix="bum.", intents=intents, activity=discord.Acti
 
 
 if __name__ == "__main__":
-    bot.add_cog(MemberLog(bot))
-    bot.add_cog(Tracker(bot))
-    bot.add_cog(Logger(bot))
+    bot.add_cog(MemberLog(bot, logs))
+    bot.add_cog(Tracker(bot, logs))
+    bot.add_cog(Logger(bot, logs))
     init_db()
     add_all_guilds(bot)
 
@@ -38,17 +44,13 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild):
-    for invite in await guild.invites():
-        add_invite(invite)
-        gld = get_log_by_id(guild.id)
-        if gld is None:
-            add_guild(guild)
+    await add_all_guild_invites(guild)
+    add_guild(guild)
 
 
 @bot.event
 async def on_guild_remove(guild):
-    for invite in await guild.invites():
-        remove_invite(invite)
+    await remove_all_guild_invites(guild)
 
 
 @bot.event

@@ -1,10 +1,11 @@
+import logging
 from datetime import datetime
 
 import discord
 import typing
 from discord.ext import commands
 
-from database import (
+from Helpers.database import (
     add_message,
     get_log_by_id,
     get_att_by_id,
@@ -12,17 +13,18 @@ from database import (
     update_msg,
     add_lumberjack_message
 )
-from helpers import has_permissions, set_log_channel, format_datetime
+from Helpers.helpers import has_permissions, set_log_channel, format_datetime
 
 
 class Logger(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: discord.Client, logs: logging):
         """
         Cog
         Handles logging system for Lumberjack
                 :param bot: Discord.py Bot Object
                 """
         self.bot = bot
+        self.logs = logs
         self._last_member = None
 
     @commands.command()
@@ -141,7 +143,7 @@ class Logger(commands.Cog):
                 color=0xFF0080,
             )
             embed.timestamp = datetime.utcnow()
-            with open("./log.txt", "w", encoding="utf-8") as file:
+            with open("../log.txt", "w", encoding="utf-8") as file:
                 for message in messages:
                     file.writelines(
                         f"Author: {message.author.name} ({message.author.id})\nID:{message.id}\n"

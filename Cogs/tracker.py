@@ -1,22 +1,24 @@
+import logging
 from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands
 
-from database import (
+from Helpers.database import (
     get_tracked_by_id,
     remove_tracker,
     get_log_by_id,
     add_tracker,
     get_msg_by_id,
 )
-from helpers import message_splitter, has_permissions
-from models import Tracking
+from Helpers.helpers import message_splitter, has_permissions
+from Helpers.models import Tracking
 
 
 class Tracker(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: discord.Client, logs: logging):
         self.bot = bot
+        self.logs = logs
         self._last_member = None
 
     @commands.command()

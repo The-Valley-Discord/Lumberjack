@@ -6,15 +6,15 @@ from typing import List
 from discord import Message, Guild
 from discord.ext.commands import Bot
 
-from models import DBMessage, DBAuthor, DBChannel, DBGuild, Tracking, LJMessage
+from Helpers.models import DBMessage, DBAuthor, DBChannel, DBGuild, Tracking, LJMessage
 
-conn = sqlite3.connect("log.db")
+conn = sqlite3.connect("../log.db")
 
 c = conn.cursor()
 
 
 def init_db():
-    with open("./schema.sql", "r") as schema_file:
+    with open("../schema.sql", "r") as schema_file:
         schema = schema_file.read()
 
     c.executescript(schema)
@@ -50,12 +50,14 @@ def add_message(message: Message):
 def get_msg_by_id(message_id: int) -> DBMessage:
     c.execute("SELECT * FROM messages WHERE id=:id", {"id": message_id})
     msg = c.fetchone()
-    author = DBAuthor(msg[1], msg[2], msg[3], msg[9])
-    channel = DBChannel(msg[4], msg[5])
-    guild = get_log_by_id(msg[6])
-    attachments = get_att_by_id(msg[0])
-    message = DBMessage(msg[0], author, channel, guild, msg[7], msg[8], attachments)
-    return message
+    try:
+        author = DBAuthor(msg[1], msg[2], msg[3], msg[9])
+        channel = DBChannel(msg[4], msg[5])
+        guild = get_log_by_id(msg[6])
+        attachments = get_att_by_id(msg[0])
+        return DBMessage(msg[0], author, channel, guild, msg[7], msg[8], attachments)
+    except TypeError:
+        raise Exception("Message, not in Database")
 
 
 def update_msg(message_id, content):

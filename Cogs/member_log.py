@@ -1,15 +1,17 @@
+import logging
 from datetime import datetime
 
 import discord
 from discord.ext import commands
 
-from database import get_log_by_id, add_lumberjack_message
-from helpers import return_time_delta_string, get_invite, update_invite, format_date
+from Helpers.database import get_log_by_id, add_lumberjack_message
+from Helpers.helpers import return_time_delta_string, get_invite, update_invite, format_date
 
 
 class MemberLog(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: discord.Client, logs: logging):
         self.bot = bot
+        self.logs = logs
         self._last_member = None
 
     @commands.Cog.listener()
