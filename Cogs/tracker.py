@@ -103,7 +103,10 @@ class Tracker(commands.Cog):
                 await logs.send(embed=embed)
                 await channel.send(embed=embed)
             else:
-                message_split = message_splitter(message.clean_content, 1900)
+                try:
+                    message_split = message_splitter(message.clean_content, 1900)
+                except ValueError:
+                    message_split = ["`blank`"]
                 embed = discord.Embed(
                     description=f"**[Jump URL]({message.jump_url})**\n{message_split[0]}",
                     color=0xFFF1D7,

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 
@@ -64,3 +64,25 @@ class LJMessage:
         self.message_id = message_id
         self.channel_id = channel_id
         self.created_at = created_at
+
+
+class BetterTimeDelta(timedelta):
+    def __str__(self):
+        time_string = ""
+        if 1 < self.days:
+            time_string += f"{self.days} days "
+        elif self.days == 1:
+            time_string += f"{self.days} day "
+        if 1 < (self.seconds // 3600):
+            time_string += f"{self.seconds // 3600} hours "
+        elif (self.seconds // 3600) == 1:
+            time_string += f"{self.seconds // 3600} hour "
+        if 1 < (self.seconds % 3600 // 60):
+            time_string += f"{(self.seconds % 3600) // 60} minutes "
+        elif 1 == (self.seconds % 3600 // 60):
+            time_string += f"{(self.seconds % 3600) // 60} minute "
+        if self.days == 0 and 1 < ((self.seconds % 3600) % 60):
+            time_string += f"{(self.seconds % 3600) % 60} seconds "
+        elif self.days == 0:
+            time_string += f"{(self.seconds % 3600) % 60} second "
+        return time_string

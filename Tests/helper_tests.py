@@ -1,4 +1,7 @@
+import logging
+import sqlite3
 import unittest
+from datetime import datetime
 
 from mock import AsyncMock
 
@@ -6,6 +9,8 @@ from Helpers.helpers import *
 import discord
 from mockito import mock
 import aiounittest
+
+from Helpers.models import BetterTimeDelta
 
 
 class TestHelperMethods(unittest.TestCase):
@@ -45,6 +50,17 @@ class TestHelperMethods(unittest.TestCase):
         with self.assertRaises(Exception) as context:
             remove_invite(invite)
         self.assertTrue("No Invite Found", context.exception)
+
+    def test_message_splitter(self):
+        self.assertEqual(['12', '3'], message_splitter("123", 2))
+
+    def test_message_splitter_short(self):
+        self.assertEqual(['123'], message_splitter("123", 3))
+
+    def test_message_splitter_error(self):
+        with self.assertRaises(ValueError) as context:
+            message_splitter("", 3)
+        self.assertTrue("Message has no contents", context.exception)
 
 
 class TestAsyncHelperMethods(aiounittest.AsyncTestCase):
@@ -96,3 +112,88 @@ class TestAsyncHelperMethods(aiounittest.AsyncTestCase):
         with self.assertRaises(Exception) as context:
             get_invite("1")
         self.assertTrue("No Invite Found", context.exception)
+
+
+class TestSetLogChannel(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        test_log = logging.getLogger()
+        cls.db = Database(sqlite3.connect(":memory:"), test_log)
+        cls.guild = mock(discord.Guild)
+        cls.guild.id = 1
+        cls.db.add_guild(cls.guild)
+
+    def test_join(self):
+        log_type = set_log_channel("join", 1, 2, self.db)
+        self.assertEqual("Join", log_type)
+        guild_settings = self.db.get_log_by_id(1)
+        self.assertEqual(2, guild_settings.join_id)
+    
+    def test_leave(self):
+        log_type = set_log_channel("leave", 1, 2, self.db)
+        self.assertEqual("Leave", log_type)
+        guild_settings = self.db.get_log_by_id(1)
+        self.assertEqual(2, guild_settings.leave_id)
+        
+    def test_delete(self):
+        log_type = set_log_channel("delete", 1, 2, self.db)
+        self.assertEqual("Delete", log_type)
+        guild_settings = self.db.get_log_by_id(1)
+        self.assertEqual(2, guild_settings.delete_id)
+    
+    def test_buik_delete(self):
+        log_type = set_log_channel("bulk_delete", 1, 2, self.db)
+        self.assertEqual("Bulk Delete", log_type)
+        guild_settings = self.db.get_log_by_id(1)
+        self.assertEqual(2, guild_settings.delete_bulk)
+    
+    def test_edit(self):
+        log_type = set_log_channel("edit", 1, 2, self.db)
+        self.assertEqual("Edit", log_type)
+        guild_settings = self.db.get_log_by_id(1)
+        self.assertEqual(2, guild_settings.edit)
+    
+    def test_username(self):
+        log_type = set_log_channel("username", 1, 2, self.db)
+        self.assertEqual("Username", log_type)
+        guild_settings = self.db.get_log_by_id(1)
+        self.assertEqual(2, guild_settings.username)
+    
+    def test_nickname(self):
+        log_type = set_log_channel("nickname", 1, 2, self.db)
+        self.assertEqual("Nickname", log_type)
+        guild_settings = self.db.get_log_by_id(1)
+        self.assertEqual(2, guild_settings.nickname)
+    
+    def test_avatar(self):
+        log_type = set_log_channel("avatar", 1, 2, self.db)
+        self.assertEqual("Avatar", log_type)
+        guild_settings = self.db.get_log_by_id(1)
+        self.assertEqual(2, guild_settings.avatar)
+        
+    def test_lj_log(self):
+        log_type = set_log_channel("ljlog", 1, 2, self.db)
+        self.assertEqual("Lumberjack Logs", log_type)
+        guild_settings = self.db.get_log_by_id(1)
+        self.assertEqual(2, guild_settings.lj_id)
+
+    def test_error(self):
+        with self.assertRaises(ValueError) as context:
+            log_type = set_log_channel("test", 1, 2, self.db)
+        self.assertTrue("No Invite Found", context.exception)
+
+
+class BetterTimeDeltaTest(unittest.TestCase):
+
+    def test_str_three_days(self):
+        self.assertEqual("3 days 1 hour 1 minute ", str(BetterTimeDelta(days=3, seconds=3663)))
+
+    def test_str_one_day(self):
+        self.assertEqual("1 day 2 hours 41 minutes ", str(BetterTimeDelta(days=1, seconds=9663)))
+
+    def test_str_three_seconds(self):
+        self.assertEqual("3 seconds ", str(BetterTimeDelta(seconds=3)))
+
+    def test_str_one_second(self):
+        self.assertEqual("1 second ", str(BetterTimeDelta(seconds=1)))

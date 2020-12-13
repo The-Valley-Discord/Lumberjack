@@ -89,38 +89,18 @@ def set_log_channel(log_type: str, guild_id: int, channel_id: int, db: Database)
         logs.lj_id = channel_id
         log_return = "Lumberjack Logs"
     db.update_log_channels(logs)
-    return log_return
+    if len(log_return) > 0:
+        return log_return
+    else:
+        raise ValueError("No Log of that type.")
 
 
 def message_splitter(content: str, cap: int) -> List:
     if len(content) == 0:
-        pass
+        raise ValueError("Message has no contents")
     elif len(content) <= cap:
         return [content]
     else:
         prt_1 = content[:cap]
         prt_2 = content[cap:]
         return [prt_1, prt_2]
-
-
-def return_time_delta_string(account_age: timedelta) -> str:
-    time_string = ""
-    if account_age.days > 7:
-        return time_string
-    if 1 < account_age.days < 7:
-        time_string += f"{account_age.days} days "
-    elif account_age.days == 1:
-        time_string += f"{account_age.days} day "
-    if 1 < (account_age.seconds // 3600):
-        time_string += f"{account_age.seconds // 3600} hours "
-    elif (account_age.seconds // 3600) == 1:
-        time_string += f"{account_age.seconds // 3600} hour "
-    if 1 < (account_age.seconds % 3600 // 60):
-        time_string += f"{(account_age.seconds % 3600) // 60} minutes "
-    elif 1 == (account_age.seconds % 3600 // 60):
-        time_string += f"{(account_age.seconds % 3600) // 60} minute "
-    if account_age.days == 0 and 1 < ((account_age.seconds % 3600) % 60):
-        time_string += f"{(account_age.seconds % 3600) % 60} seconds "
-    elif account_age.days == 0:
-        time_string += f"{(account_age.seconds % 3600) % 60} second "
-    return time_string

@@ -5,7 +5,8 @@ import discord
 from discord.ext import commands
 
 from Helpers.database import Database
-from Helpers.helpers import return_time_delta_string, get_invite, update_invite, format_date
+from Helpers.helpers import get_invite, update_invite, format_date
+from Helpers.models import BetterTimeDelta
 
 
 class MemberLog(commands.Cog):
@@ -19,7 +20,7 @@ class MemberLog(commands.Cog):
     async def on_member_join(self, member):
         gld = self.db.get_log_by_id(member.guild.id)
         logs = self.bot.get_channel(gld.join_id)
-        account_age = datetime.utcnow() - member.created_at
+        account_age = BetterTimeDelta(datetime.utcnow() - member.created_at)
         invite_used = "Vanity URL"
         invite_uses = ""
         inviter = ""
@@ -48,11 +49,10 @@ class MemberLog(commands.Cog):
                 ),
                 color=color,
             )
-            new_account_string = return_time_delta_string(account_age)
-            if len(new_account_string) > 0:
+            if account_age.days < 7:
                 embed.add_field(
                     name="**New Account**",
-                    value=f"Created {new_account_string}ago",
+                    value=f"Created {account_age}ago",
                     inline=False,
                 )
             embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})")
