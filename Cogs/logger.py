@@ -5,19 +5,12 @@ import discord
 import typing
 from discord.ext import commands
 
-from Helpers.database import (
-    add_message,
-    get_log_by_id,
-    get_att_by_id,
-    get_msg_by_id,
-    update_msg,
-    add_lumberjack_message
-)
+from Helpers.database import Database
 from Helpers.helpers import has_permissions, set_log_channel, format_datetime
 
 
 class Logger(commands.Cog):
-    def __init__(self, bot: discord.Client, logs: logging):
+    def __init__(self, bot: discord.Client, logs: logging, db: Database):
         """
         Cog
         Handles logging system for Lumberjack
@@ -25,6 +18,7 @@ class Logger(commands.Cog):
                 """
         self.bot = bot
         self.logs = logs
+        self.db = db
         self._last_member = None
 
     @commands.command()
@@ -32,7 +26,7 @@ class Logger(commands.Cog):
     async def log(self, ctx, log_type, channel: typing.Union[discord.TextChannel, str]):
         if isinstance(channel, str) and channel == "here":
             channel = ctx.channel
-        log_name = set_log_channel(log_type.lower(), ctx.guild.id, channel.id)
+        log_name = set_log_channel(log_type.lower(), ctx.guild.id, channel.id, self.db)
         if len(log_name) == 0:
             await ctx.send(
                 "Incorrect log type. Please use one of the following. Join, Leave, "
@@ -49,7 +43,7 @@ class Logger(commands.Cog):
     @commands.command()
     @commands.check_any(has_permissions())
     async def clear(self, ctx, log_type):
-        log_name = set_log_channel(log_type.lower(), ctx.guild.id, 0)
+        log_name = set_log_channel(log_type.lower(), ctx.guild.id, 0, self.db)
         if len(log_name) == 0:
             await ctx.send(
                 "Incorrect log type. Please use one of the following. Join, Leave, "
@@ -60,14 +54,14 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        add_message(message)
+        self.db.add_message(message)
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
-        gld = get_log_by_id(payload.guild_id)
+        gld = self.db.get_log_by_id(payload.guild_id)
         logs = self.bot.get_channel(gld.delete_id)
         channel = self.bot.get_channel(payload.channel_id)
-        msg = get_msg_by_id(payload.message_id)
+        msg = self.db.get_msg_by_id(payload.message_id)
         try:
             author = channel.guild.get_member(msg.author.id)
             polyphony_role = 0
@@ -100,7 +94,7 @@ class Logger(commands.Cog):
                 if len(msg.attachments) == 0:
                     pass
                 else:
-                    att = get_att_by_id(payload.message_id)
+                    att = self.db.get_att_by_id(payload.message_id)
                     attachments = []
                     for attachment in att:
                         attachments.append(attachment[1])
@@ -114,7 +108,7 @@ class Logger(commands.Cog):
                 embed.set_footer(text=f"")
                 embed.timestamp = datetime.utcnow()
                 message = await logs.send(embed=embed)
-                add_lumberjack_message(message)
+                self.db.add_lumberjack_message(message)
         except TypeError or AttributeError:
             print("Delete Message log Failed because message not in database.")
 
@@ -123,13 +117,13 @@ class Logger(commands.Cog):
         messages = []
         message_ids = sorted(payload.message_ids)
         for message_id in message_ids:
-            message = get_msg_by_id(message_id)
+            message = self.db.get_msg_by_id(message_id)
             if message is None or self.bot.user.id == message.author.id:
                 pass
             else:
                 messages.append(message)
         if len(messages) != 0:
-            gld = get_log_by_id(payload.guild_id)
+            gld = self.db.get_log_by_id(payload.guild_id)
             logs = self.bot.get_channel(gld.delete_bulk)
             current_time = datetime.utcnow()
             purged_channel = self.bot.get_channel(payload.channel_id)
@@ -157,17 +151,17 @@ class Logger(commands.Cog):
                         filename=f"{current_time.strftime(format_datetime)}.txt",
                     )
                 )
-                add_lumberjack_message(message1)
-                add_lumberjack_message(message2)
+                self.db.add_lumberjack_message(message1)
+                self.db.add_lumberjack_message(message2)
             except discord.HTTPException:
                 pass
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
         channel = self.bot.get_channel(payload.channel_id)
-        gld = get_log_by_id(channel.guild.id)
+        gld = self.db.get_log_by_id(channel.guild.id)
         logs = self.bot.get_channel(gld.edit)
-        before = get_msg_by_id(payload.message_id)
+        before = self.db.get_msg_by_id(payload.message_id)
         try:
             author = channel.guild.get_member(before.author.id)
             polyphony_role = 0
@@ -219,8 +213,8 @@ class Logger(commands.Cog):
                 embed.set_thumbnail(url=author.avatar_url)
                 embed.timestamp = datetime.utcnow()
                 message = await logs.send(embed=embed)
-                add_lumberjack_message(message)
+                self.db.add_lumberjack_message(message)
                 content = payload.data['content']
-                update_msg(payload.message_id, content)
+                self.db.update_msg(payload.message_id, content)
         except TypeError:
             print("Edit Message log failed because message not in database.")

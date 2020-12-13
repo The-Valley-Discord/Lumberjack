@@ -1,18 +1,15 @@
 import discord
 from discord.ext import commands
 
-from Helpers.database import (
-    init_db,
-    delete_old_db_messages,
-    get_old_lumberjack_messages,
-    delete_lumberjack_messages_from_db, add_all_guilds, add_guild,
-)
+from Helpers.database import Database
+
 from Helpers.helpers import add_invite, remove_invite, add_all_invites, add_all_guild_invites, remove_all_guild_invites
 from Cogs.logger import Logger
 from Cogs.member_log import MemberLog
 from Cogs.tracker import Tracker
 
 import logging
+import sqlite3
 
 logs = logging.getLogger("Lumberjack")
 logs.setLevel(logging.DEBUG)
@@ -29,11 +26,11 @@ bot = commands.Bot(command_prefix="bum.", intents=intents, activity=discord.Acti
 
 
 if __name__ == "__main__":
-    bot.add_cog(MemberLog(bot, logs))
-    bot.add_cog(Tracker(bot, logs))
-    bot.add_cog(Logger(bot, logs))
-    init_db()
-    add_all_guilds(bot)
+    db = Database(sqlite3.connect("log.db"), logs)
+    bot.add_cog(MemberLog(bot, logs, db))
+    bot.add_cog(Tracker(bot, logs, db))
+    bot.add_cog(Logger(bot, logs, db))
+    db.add_all_guilds(bot)
 
 
 @bot.event
@@ -45,7 +42,7 @@ async def on_ready():
 @bot.event
 async def on_guild_join(guild):
     await add_all_guild_invites(guild)
-    add_guild(guild)
+    db.add_guild(guild)
 
 
 @bot.event
@@ -65,8 +62,8 @@ async def on_invite_delete(invite):
 
 @bot.event
 async def on_message_delete(message):
-    delete_old_db_messages()
-    db_messages = get_old_lumberjack_messages()
+    db.delete_old_db_messages()
+    db_messages = db.get_old_lumberjack_messages()
     for message_id in db_messages:
         channel = bot.get_channel(message_id[1])
         try:
@@ -74,7 +71,7 @@ async def on_message_delete(message):
             await lum_message.delete()
         except discord.NotFound:
             pass
-        delete_lumberjack_messages_from_db(message_id[0])
+        db.delete_lumberjack_messages_from_db(message_id[0])
 
 
 @bot.command()

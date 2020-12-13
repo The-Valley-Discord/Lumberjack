@@ -1,34 +1,35 @@
-import logging as lumberlog
-import sqlite3
+import logging
 from datetime import datetime, timedelta
 from typing import List
+import sqlite3
 
+import discord
 from discord import Message, Guild
 from discord.ext.commands import Bot
 
 from Helpers.models import DBMessage, DBAuthor, DBChannel, DBGuild, Tracking, LJMessage
 
-conn = sqlite3.connect("../log.db")
 
-c = conn.cursor()
+class Database:
+    def __init__(self, conn: sqlite3.Connection, logs: logging):
+        self.conn = conn
+        self.logs = logs
+        with open("../schema.sql", "r") as schema_file:
+            schema = schema_file.read()
+        try:
+            conn.executescript(schema)
+            logs.info("Database initialized from schema.sql")
+        except sqlite3.Error:
+            logs.error("Failed creating database from schema.sql")
 
-
-def init_db():
-    with open("../schema.sql", "r") as schema_file:
-        schema = schema_file.read()
-
-    c.executescript(schema)
-    lumberlog.debug("Database initialized from schema.sql")
-
-
-def add_message(message: Message):
-    attachments = [f"{attachment.proxy_url}" for attachment in message.attachments]
-    attachment_bool = False
-    if len(attachments) > 0:
-        attachment_bool = True
-    if attachment_bool:
-        add_attachment(message.id, attachments)
-    values = (
+    def add_message(self, message: Message):
+        attachments = [f"{attachment.proxy_url}" for attachment in message.attachments]
+        attachment_bool = False
+        if len(attachments) > 0:
+            attachment_bool = True
+        if attachment_bool:
+            self.add_attachment(message.id, attachments)
+        values = (
             message.id,
             message.author.id,
             f"{message.author.name}#{message.author.discriminator}",
@@ -41,167 +42,186 @@ def add_message(message: Message):
             f"{message.author.avatar_url}",
             attachment_bool,
         )
-    sql = """INSERT INTO messages (id,author,authorname,authordisplayname,channelid,channelname,guildid,
-    clean_content,created_at,pfp,attachments) VALUES(?,?,?,?,?,?,?,?,?,?,?) """
-    c.execute(sql, values)
-    conn.commit()
+        sql = """INSERT INTO messages (id,author,authorname,authordisplayname,channelid,channelname,guildid,
+        clean_content,created_at,pfp,attachments) VALUES(?,?,?,?,?,?,?,?,?,?,?) """
+        try:
+            self.conn.execute(sql, values)
+            self.conn.commit()
+        except sqlite3.Error:
+            self.logs.error("Error entering following message into database: " + str(values))
 
+    def get_msg_by_id(self, message_id: int) -> DBMessage:
+        msg = self.conn.execute("SELECT * FROM messages WHERE id=:id", {"id": message_id}).fetchone()
+        try:
+            author = DBAuthor(msg[1], msg[2], msg[3], msg[9])
+            channel = DBChannel(msg[4], msg[5])
+            guild = self.get_log_by_id(msg[6])
+            attachments = self.get_att_by_id(msg[0])
+            return DBMessage(msg[0], author, channel, guild, msg[7], msg[8], attachments)
+        except TypeError:
+            raise Exception("Message, not in Database")
 
-def get_msg_by_id(message_id: int) -> DBMessage:
-    c.execute("SELECT * FROM messages WHERE id=:id", {"id": message_id})
-    msg = c.fetchone()
-    try:
-        author = DBAuthor(msg[1], msg[2], msg[3], msg[9])
-        channel = DBChannel(msg[4], msg[5])
-        guild = get_log_by_id(msg[6])
-        attachments = get_att_by_id(msg[0])
-        return DBMessage(msg[0], author, channel, guild, msg[7], msg[8], attachments)
-    except TypeError:
-        raise Exception("Message, not in Database")
-
-
-def update_msg(message_id, content):
-    with conn:
-        c.execute(
+    def update_msg(self, message_id, content):
+        self.conn.execute(
             """UPDATE messages SET clean_content = :clean_content
                     WHERE id = :id""",
             {"id": message_id, "clean_content": content},
         )
+        self.conn.commit()
 
+    def get_att_by_id(self, message_id: int) -> List:
+        return self.conn.execute("SELECT * FROM attachment_urls WHERE message_id=:id", {"id": message_id}).fetchall()
 
-def get_att_by_id(message_id: int) -> List:
-    c.execute("SELECT * FROM attachment_urls WHERE message_id=:id", {"id": message_id})
-    return c.fetchall()
+    def add_attachment(self, message_id, attachments):
+        for attachment in attachments:
+            try:
+                self.conn.execute(
+                    "INSERT INTO attachment_urls VALUES (:message_id, :attachment)",
+                    {"message_id": message_id, "attachment": attachment},
+                )
+                self.conn.commit()
+            except sqlite3.Error:
+                logging.error(f"Failed to add attachment of id: {message_id} to the database: {attachment}")
 
+    def delete_old_db_messages(self):
+        old_date = datetime.utcnow() - timedelta(days=31)
+        try:
+            self.conn.execute("DELETE FROM messages WHERE DATETIME(created_at) < :timestamp",
+                              {"timestamp": old_date})
+            latest_message = self.conn.execute("SELECT min(id) FROM messages").fetchone()
+            self.conn.execute('DELETE FROM attachment_urls where message_id < :id', {
+                "id": latest_message[0]})
+            self.conn.commit()
+        except sqlite3.Error:
+            self.logs.error("Error deleting old messages from database")
 
-def add_attachment(message_id, attachments):
-    for attachment in attachments:
-        c.execute(
-            "INSERT INTO attachment_urls VALUES (:message_id, :attachment)",
-            {"message_id": message_id, "attachment": attachment},
-        )
+    def add_all_guilds(self, bot: Bot):
+        for guild in bot.guilds:
+            gld = self.get_log_by_id(guild.id)
+            if gld is None:
+                self.add_guild(guild)
 
+    def add_guild(self, guild: Guild):
+        new_guild = (guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        sql = """INSERT INTO log_channels (guildid,joinid,leaveid,deleteid,delete_bulk,edit,username,nickname,
+        avatar,stat_member) VALUES(?,?,?,?,?,?,?,?,?,?) """
+        try:
+            self.conn.execute(sql, new_guild)
+            self.conn.commit()
+        except sqlite3.Error:
+            self.logs.error("Failed to enter following guild into database: " + str(guild))
 
-def delete_old_db_messages():
-    old_date = datetime.utcnow() - timedelta(days=31)
-    c.execute("DELETE FROM messages WHERE DATETIME(created_at) < :timestamp",
-              {"timestamp": old_date})
-    c.execute("SELECT min(id) FROM messages")
-    latest_message = c.fetchone()
-    c.execute('DELETE FROM attachment_urls where message_id < :id', {
-        "id": latest_message[0]})
+    def get_log_by_id(self, guild_id: int) -> DBGuild:
+        gld = self.conn.execute("SELECT * FROM log_channels WHERE guildid=:id", {"id": guild_id}).fetchone()
+        return DBGuild(gld[0], gld[1], gld[2], gld[3], gld[4], gld[5], gld[6], gld[7], gld[8], gld[9], gld[10])
 
+    def update_log_channels(self, guild: DBGuild):
+        try:
+            self.conn.execute(
+                "UPDATE log_channels "
+                "SET joinid=:joinid, "
+                "leaveid=:leaveid, "
+                "deleteid=:deleteid, "
+                "delete_bulk=:delete_bulk, "
+                "edit=:edit, "
+                "username=:username, "
+                "nickname=:nickname, "
+                "avatar=:avatar, "
+                "stat_member=:stats, "
+                "ljid=:ljid "
+                "WHERE guildid=:guildid",
+                {"joinid": guild.join_id, "leaveid": guild.leave_id,
+                 "deleteid": guild.delete_id, "delete_bulk": guild.delete_bulk,
+                 "edit": guild.edit, "username": guild.username, "nickname": guild.nickname,
+                 "avatar": guild.avatar, "stats": guild.stat_member,
+                 "ljid": guild.lj_id, "guildid": guild.id},
+            )
+            self.conn.commit()
+        except sqlite3.Error:
+            self.logs.error(f"Failed to update log channel of guild: {guild}")
 
-def add_all_guilds(bot: Bot):
-    for guild in bot.guilds:
-        gld = get_log_by_id(guild.id)
-        if gld is None:
-            add_guild(guild)
+    def get_tracked_by_id(self, guild_id: int, user_id: int) -> Tracking:
+        values = (guild_id, user_id)
+        sql = """SELECT * FROM tracking WHERE guildid=? AND userid=?"""
+        tracked = self.conn.execute(sql, values).fetchone()
+        try:
+            return Tracking(tracked[0], tracked[1], tracked[2], tracked[3],
+                            tracked[4], tracked[5], tracked[6])
+        except TypeError:
+            return None
 
+    def add_tracker(self, new_tracker: Tracking):
+        tracker = (new_tracker.user_id, new_tracker.username, new_tracker.guild_id,
+                   new_tracker.channel_id, new_tracker.end_time, new_tracker.mod_id,
+                   new_tracker.mod_name)
+        tracker_check = self.get_tracked_by_id(new_tracker.guild_id, new_tracker.user_id)
+        if tracker_check is None:
+            sql = """INSERT INTO tracking (userid,username,guildid,channelid,endtime,modid,modname) 
+            VALUES(?,?,?,?,?,?,?) """
+            try:
+                self.conn.execute(sql, tracker)
+                self.conn.commit()
+            except sqlite3.Error:
+                self.logs.error("Failed to enter tracker into database")
+                raise Exception("Failed to enter tracker into database")
+        else:
+            try:
+                self.conn.execute(
+                    """UPDATE tracking SET endtime = :endtime,
+                                     modid = :modid,
+                                     modname = :modname,
+                                     channelid = :channelid
+                                    WHERE userid = :userid
+                                    AND guildid = :guildid""",
+                    {
+                        "endtime": tracker[4],
+                        "modid": tracker[5],
+                        "modname": tracker[6],
+                        "channelid": tracker[3],
+                        "userid": tracker[0],
+                        "guildid": tracker[2],
+                    },
+                )
+            except sqlite3.Error:
+                self.logs.error("Failed to update tracker into database")
+                raise Exception("Failed to update tracker into database")
 
-def add_guild(guild: Guild):
-    new_guild = (guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-    sql = """INSERT INTO log_channels (guildid,joinid,leaveid,deleteid,delete_bulk,edit,username,nickname,
-    avatar,stat_member) VALUES(?,?,?,?,?,?,?,?,?,?) """
-    c.execute(sql, new_guild)
-    conn.commit()
+    def remove_tracker(self, guild_id: int, user_id: int):
+        tracker_to_remove = (guild_id, user_id)
+        sql = """DELETE from tracking WHERE guildid = ? AND userid = ?"""
+        try:
+            self.conn.execute(sql, tracker_to_remove)
+            self.conn.commit()
+        except sqlite3.Error:
+            self.logs.error("Failed to remove tracker from database")
+            raise Exception("Failed to remove tracker from database")
 
+    def add_lumberjack_message(self, message: discord.Message):
+        sql = """INSERT INTO lumberjack_messages (message_id, channel_id, created_at) 
+               VALUES(?,?,?) """
+        try:
+            self.conn.execute(sql, (message.id, message.channel.id, datetime.utcnow()))
+            self.conn.commit()
+        except sqlite3.Error:
+            self.logs.error(f"Failed to add following lumberjack message into database: {message}")
 
-def get_log_by_id(guild_id: int) -> DBGuild:
-    c.execute("SELECT * FROM log_channels WHERE guildid=:id", {"id": guild_id})
-    gld = c.fetchone()
-    return DBGuild(gld[0], gld[1], gld[2], gld[3], gld[4], gld[5], gld[6], gld[7], gld[8], gld[9], gld[10])
+    def get_old_lumberjack_messages(self):
+        old_date = datetime.utcnow() - timedelta(days=31)
+        messages = self.conn.execute("SELECT * FROM lumberjack_messages WHERE DATETIME(created_at) < :timestamp",
+                                     {"timestamp": old_date}).fetchall()
+        lj_messages = []
+        for message in messages:
+            try:
+                lj_messages.append(LJMessage(message[0], message[1], message[2]))
+            except TypeError:
+                self.logs.error("No old LJ Messages in database")
 
+        return lj_messages
 
-def update_log_channels(guild: DBGuild):
-    c.execute(
-        "UPDATE log_channels "
-        "SET joinid=:joinid, "
-        "leaveid=:leaveid, "
-        "deleteid=:deleteid, "
-        "delete_bulk=:delete_bulk, "
-        "edit=:edit, "
-        "username=:username, "
-        "nickname=:nickname, "
-        "avatar=:avatar, "
-        "stat_member=:stats, "
-        "ljid=:ljid "
-        "WHERE guildid=:guildid",
-        {"joinid": guild.join_id, "leaveid": guild.leave_id,
-         "deleteid": guild.delete_id, "delete_bulk": guild.delete_bulk,
-         "edit": guild.edit, "username": guild.username, "nickname": guild.nickname,
-         "avatar": guild.avatar, "stats": guild.stat_member,
-         "ljid": guild.lj_id, "guildid": guild.id},
-    )
-
-
-def get_tracked_by_id(guild_id: int, user_id: int) -> Tracking:
-    values = (guild_id, user_id)
-    sql = """SELECT * FROM tracking WHERE guildid=? AND userid=?"""
-    c.execute(sql, values)
-    tracked = c.fetchone()
-    try:
-        return Tracking(tracked[0], tracked[1], tracked[2], tracked[3],
-                        tracked[4], tracked[5], tracked[6])
-    except TypeError:
-        return None
-
-
-def add_tracker(new_tracker: Tracking):
-    tracker = (new_tracker.user_id, new_tracker.username, new_tracker.guild_id,
-               new_tracker.channel_id, new_tracker.end_time, new_tracker.mod_id,
-               new_tracker.mod_name)
-    tracker_check = get_tracked_by_id(new_tracker.guild_id, new_tracker.user_id)
-    if tracker_check is None:
-        sql = """INSERT INTO tracking (userid,username,guildid,channelid,endtime,modid,modname) 
-        VALUES(?,?,?,?,?,?,?) """
-        c.execute(sql, tracker)
-        conn.commit()
-    else:
-        c.execute(
-            """UPDATE tracking SET endtime = :endtime,
-                             modid = :modid,
-                             modname = :modname,
-                             channelid = :channelid
-                            WHERE userid = :userid
-                            AND guildid = :guildid""",
-            {
-                "endtime": tracker[4],
-                "modid": tracker[5],
-                "modname": tracker[6],
-                "channelid": tracker[3],
-                "userid": tracker[0],
-                "guildid": tracker[2],
-            },
-        )
-    return c.lastrowid
-
-
-def remove_tracker(guild_id: int, user_id: int):
-    tracker_to_remove = (guild_id, user_id)
-    sql = """DELETE from tracking WHERE guildid = ? AND userid = ?"""
-    c.execute(sql, tracker_to_remove)
-    conn.commit()
-
-
-def add_lumberjack_message(message):
-    sql = """INSERT INTO lumberjack_messages (message_id, channel_id, created_at) 
-           VALUES(?,?,?) """
-    c.execute(sql, (message.id, message.channel.id, datetime.utcnow()))
-    conn.commit()
-
-
-def get_old_lumberjack_messages():
-    old_date = datetime.utcnow() - timedelta(days=31)
-    c.execute("SELECT * FROM lumberjack_messages WHERE DATETIME(created_at) < :timestamp",
-              {"timestamp": old_date})
-    messages = c.fetchall()
-    lj_messages = []
-    for message in messages:
-        lj_messages.append(LJMessage(message[0], message[1], message[2]))
-    return lj_messages
-
-
-def delete_lumberjack_messages_from_db(message_id):
-    c.execute("DELETE FROM lumberjack_messages WHERE message_id=:message_id",
-              {"message_id": message_id})
+    def delete_lumberjack_messages_from_db(self, message_id):
+        try:
+            self.conn.execute("DELETE FROM lumberjack_messages WHERE message_id=:message_id",
+                              {"message_id": message_id})
+            self.conn.commit()
+        except sqlite3.Error:
+            self.logs.error("Failed to delete old LJ Messages from Database")

@@ -17,6 +17,9 @@ class DBGuild(object):
         self.stat_member = stat_member
         self.lj_id = lj_id
 
+    def __str__(self) -> str:
+        return str(self.id)
+
 
 class DBAuthor(object):
     def __init__(self, author_id: int, name: str, display_name: str, pfp: str):

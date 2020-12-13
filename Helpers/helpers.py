@@ -2,10 +2,9 @@ from datetime import timedelta
 from typing import List
 
 import discord
-from discord import Invite
 from discord.ext import commands
 
-from Helpers import database
+from Helpers.database import Database
 
 
 def has_permissions():
@@ -21,23 +20,23 @@ format_time = "%I:%M %p"
 format_datetime = "%b %d, %Y  %I:%M %p"
 
 
-def add_invite(invite: Invite):
+def add_invite(invite: discord.Invite):
     before_invites[invite.id] = invite
 
 
-def get_invite(invite_id: str) -> Invite:
+def get_invite(invite_id: str) -> discord.Invite:
     try:
         return before_invites[invite_id]
     except KeyError:
         raise Exception("No Invite Found")
 
 
-def update_invite(invite: Invite):
+def update_invite(invite: discord.Invite):
     d = {invite.id: invite}
     before_invites.update(d)
 
 
-def remove_invite(invite: Invite):
+def remove_invite(invite: discord.Invite):
     try:
         before_invites.pop(invite.id)
     except KeyError:
@@ -59,8 +58,8 @@ async def remove_all_guild_invites(guild: discord.Guild):
         remove_invite(invite)
 
 
-def set_log_channel(log_type: str, guild_id: int, channel_id: int) -> str:
-    logs = database.get_log_by_id(guild_id)
+def set_log_channel(log_type: str, guild_id: int, channel_id: int, db: Database) -> str:
+    logs = db.get_log_by_id(guild_id)
     log_return = ""
     if log_type == "join":
         logs.join_id = channel_id
@@ -89,7 +88,7 @@ def set_log_channel(log_type: str, guild_id: int, channel_id: int) -> str:
     elif log_type == "ljlog":
         logs.lj_id = channel_id
         log_return = "Lumberjack Logs"
-    database.update_log_channels(logs)
+    db.update_log_channels(logs)
     return log_return
 
 

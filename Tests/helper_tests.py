@@ -1,11 +1,10 @@
 import unittest
-from asyncio import Future
 
-from mock import MagicMock, AsyncMock
+from mock import AsyncMock
 
 from Helpers.helpers import *
 import discord
-from mockito import mock, when
+from mockito import mock
 import aiounittest
 
 

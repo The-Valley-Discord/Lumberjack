@@ -4,19 +4,20 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 
-from Helpers.database import get_log_by_id, add_lumberjack_message
+from Helpers.database import Database
 from Helpers.helpers import return_time_delta_string, get_invite, update_invite, format_date
 
 
 class MemberLog(commands.Cog):
-    def __init__(self, bot: discord.Client, logs: logging):
+    def __init__(self, bot: discord.Client, logs: logging, db: Database):
         self.bot = bot
         self.logs = logs
+        self.db = db
         self._last_member = None
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        gld = get_log_by_id(member.guild.id)
+        gld = self.db.get_log_by_id(member.guild.id)
         logs = self.bot.get_channel(gld.join_id)
         account_age = datetime.utcnow() - member.created_at
         invite_used = "Vanity URL"
@@ -68,7 +69,7 @@ class MemberLog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        gld = get_log_by_id(member.guild.id)
+        gld = self.db.get_log_by_id(member.guild.id)
         logs = self.bot.get_channel(gld.leave_id)
         if logs is None:
             pass
@@ -109,7 +110,7 @@ class MemberLog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        gld = get_log_by_id(after.guild.id)
+        gld = self.db.get_log_by_id(after.guild.id)
         logs = self.bot.get_channel(gld.nickname)
         if before.nick == after.nick:
             pass
@@ -130,13 +131,13 @@ class MemberLog(commands.Cog):
             embed.set_footer(text=f"")
             embed.timestamp = datetime.utcnow()
             message = await logs.send(embed=embed)
-            add_lumberjack_message(message)
+            self.db.add_lumberjack_message(message)
 
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
         for guild in self.bot.guilds:
             if after in guild.members:
-                gld = get_log_by_id(guild.id)
+                gld = self.db.get_log_by_id(guild.id)
                 if (
                     before.name != after.name
                     or before.discriminator != after.discriminator
@@ -161,7 +162,7 @@ class MemberLog(commands.Cog):
                         embed.set_footer(text=f"")
                         embed.timestamp = datetime.utcnow()
                         message = await logs.send(embed=embed)
-                        add_lumberjack_message(message)
+                        self.db.add_lumberjack_message(message)
                 if before.avatar != after.avatar:
                     logs = self.bot.get_channel(gld.avatar)
                     if logs is None:
@@ -183,4 +184,4 @@ class MemberLog(commands.Cog):
                         embed.set_image(url=after.avatar_url_as(size=128))
                         embed.timestamp = datetime.utcnow()
                         message = await logs.send(embed=embed)
-                        add_lumberjack_message(message)
+                        self.db.add_lumberjack_message(message)
