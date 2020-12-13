@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 from Helpers.database import Database
-from Helpers.helpers import message_splitter, has_permissions
+from Helpers.helpers import message_splitter, has_permissions, field_message_splitter
 from Helpers.models import Tracking
 
 
@@ -32,7 +32,7 @@ class Tracker(commands.Cog):
             time_limit = timedelta(minutes=int(time[:-1]))
             tracking_time = datetime.utcnow() + time_limit
         else:
-            pass
+            raise commands.BadArgument
         if user.guild_permissions.manage_guild:
             await ctx.send(f"<\_<\n>\_>\nI can't track a mod.\n Try someone else")
         elif channel.guild != ctx.guild:
@@ -87,8 +87,9 @@ class Tracker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        tracker = self.db.get_tracked_by_id(message.guild.id, message.author.id)
-        if tracker is None:
+        try:
+            tracker = self.db.get_tracked_by_id(message.guild.id, message.author.id)
+        except ValueError:
             pass
         else:
             attachments = [
@@ -140,12 +141,13 @@ class Tracker(commands.Cog):
         channel = self.bot.get_channel(payload.channel_id)
         before = self.db.get_msg_by_id(payload.message_id)
         author = self.bot.get_user(before.author.id)
-        tracker = self.db.get_tracked_by_id(channel.guild.id, before.author.id)
-        if "content" not in payload.data:
-            payload.data["content"] = ""
-        if tracker is None:
+        try:
+            tracker = self.db.get_tracked_by_id(channel.guild.id, before.author.id)
+        except ValueError:
             pass
         else:
+            if "content" not in payload.data:
+                payload.data["content"] = ""
             channel = self.bot.get_channel(tracker.channel_id)
             embed = discord.Embed(
                 description=f"**[Jump Url](https://discordapp.com/channels/"
@@ -158,36 +160,15 @@ class Tracker(commands.Cog):
                 icon_url=author.avatar_url,
             )
             embed.timestamp = datetime.utcnow()
-            if len(before.clean_content) == 0:
-                embed.add_field(name=f"**Before**", value=f"`Blank`", inline=False)
-            elif len(before.clean_content) <= 1024:
-                embed.add_field(
-                    name=f"**Before**", value=f"{before.clean_content} ", inline=False
-                )
-            else:
-                prts = before.clean_content
-                prt_1 = prts[:1024]
-                prt_2 = prts[1024:]
-                embed.add_field(name=f"**Before**", value=f"{prt_1}", inline=False)
-                embed.add_field(name=f"Continued", value=f"{prt_2}")
-            if len(payload.data["content"]) == 0:
-                embed.add_field(name=f"**After**", value=f"`Blank`", inline=False)
-            elif len(payload.data["content"]) <= 1024:
-                embed.add_field(
-                    name=f"**After**", value=f"{payload.data['content']} ", inline=False
-                )
-            else:
-                prts = payload.data["content"]
-                prt_1 = prts[:1024]
-                prt_2 = prts[1024:]
-                embed.add_field(name=f"**After**", value=f"{prt_1}", inline=False)
-                embed.add_field(name=f"Continued", value=f"{prt_2}")
+            embed = field_message_splitter(embed, before.clean_content, "Before")
+            embed = field_message_splitter(embed, payload.data["content"], "After")
             await channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        tracker = self.db.get_tracked_by_id(member.guild.id, member.id)
-        if tracker is None:
+        try:
+            tracker = self.db.get_tracked_by_id(member.guild.id, member.id)
+        except ValueError:
             pass
         else:
             channel = self.bot.get_channel(tracker.channel_id)
@@ -235,8 +216,9 @@ class Tracker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        tracker = self.db.get_tracked_by_id(after.guild.id, after.id)
-        if tracker is None:
+        try:
+            tracker = self.db.get_tracked_by_id(after.guild.id, after.id)
+        except ValueError:
             pass
         else:
             channel = self.bot.get_channel(tracker.channel_id)
@@ -257,8 +239,9 @@ class Tracker(commands.Cog):
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
         for guild in self.bot.guilds:
-            tracker = self.db.get_tracked_by_id(guild.id, after.id)
-            if tracker is None:
+            try:
+                tracker = self.db.get_tracked_by_id(guild.id, after.id)
+            except ValueError:
                 pass
             else:
                 if (

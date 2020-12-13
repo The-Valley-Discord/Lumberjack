@@ -63,3 +63,17 @@ def message_splitter(content: str, cap: int) -> List:
         prt_1 = content[:cap]
         prt_2 = content[cap:]
         return [prt_1, prt_2]
+
+
+def field_message_splitter(
+    embed: discord.Embed, content: str, content_type: str
+) -> discord.Embed:
+    if len(content) == 0:
+        embed.add_field(name=f"**{content_type}**", value=f"`Blank`", inline=False)
+    else:
+        embed.add_field(
+            name=f"**{content_type}**", value=f"{content[:1024]} ", inline=False
+        )
+    if len(content) > 1024:
+        embed.add_field(name=f"Continued", value=f"{content[1024:]}")
+    return embed

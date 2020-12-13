@@ -6,7 +6,7 @@ from discord.ext import commands
 
 from Helpers.database import Database
 from Helpers.helpers import get_invite, update_invite, format_date
-from Helpers.models import BetterTimeDelta
+from Helpers.models import BetterDateTime
 
 
 class MemberLog(commands.Cog):
@@ -20,7 +20,7 @@ class MemberLog(commands.Cog):
     async def on_member_join(self, member):
         gld = self.db.get_log_by_id(member.guild.id)
         logs = self.bot.get_channel(gld.join_id)
-        account_age = BetterTimeDelta(datetime.utcnow() - member.created_at)
+        account_age = BetterDateTime.utcnow() - BetterDateTime.from_datetime(member.created_at)
         invite_used = "Vanity URL"
         invite_uses = ""
         inviter = ""
@@ -60,12 +60,6 @@ class MemberLog(commands.Cog):
             embed.set_footer(text=f"Total Members: {member.guild.member_count}")
             embed.timestamp = datetime.utcnow()
             await logs.send(embed=embed)
-            # broken membercount tracker
-            # stat_channel = self.bot.get_channel(gld[9])
-            # if stat_channel is None:
-            #    pass
-            # else:
-            #    await stat_channel.edit(name=f"Members: {member.guild.member_count}")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -101,12 +95,6 @@ class MemberLog(commands.Cog):
                     name=f"**Roles[{len(roles)}]**", value=f"{roles_str}", inline=False
                 )
             await logs.send(embed=embed)
-            # broken membercount tracker
-            # stat_channel = self.bot.get_channel(gld[9])
-            # if stat_channel is None:
-            #    pass
-            # else:
-            #   await stat_channel.edit(name=f"Members: {member.guild.member_count}")
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):

@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, TextIO
 import sqlite3
 
 import discord
@@ -11,13 +11,12 @@ from Helpers.models import DBMessage, DBAuthor, DBChannel, DBGuild, Tracking, LJ
 
 
 class Database:
-    def __init__(self, conn: sqlite3.Connection, logs: logging):
+    def __init__(self, conn: sqlite3.Connection, logs: logging, schema_file: TextIO):
         self.conn = conn
         self.logs = logs
-        with open("../schema.sql", "r") as schema_file:
-            schema = schema_file.read()
+        self.schema = schema_file.read()
         try:
-            conn.executescript(schema)
+            conn.executescript(self.schema)
             logs.info("Database initialized from schema.sql")
         except sqlite3.Error:
             logs.error("Failed creating database from schema.sql")
@@ -56,16 +55,13 @@ class Database:
         msg = self.conn.execute(
             "SELECT * FROM messages WHERE id=:id", {"id": message_id}
         ).fetchone()
-        try:
-            author = DBAuthor(msg[1], msg[2], msg[3], msg[9])
-            channel = DBChannel(msg[4], msg[5])
-            guild = self.get_log_by_id(msg[6])
-            attachments = self.get_att_by_id(msg[0])
-            return DBMessage(
-                msg[0], author, channel, guild, msg[7], msg[8], attachments
-            )
-        except TypeError:
-            raise Exception("Message, not in Database")
+        if msg is None:
+            raise KeyError("Retrieved message not in database.")
+        author = DBAuthor(msg[1], msg[2], msg[3], msg[9])
+        channel = DBChannel(msg[4], msg[5])
+        guild = self.get_log_by_id(msg[6])
+        attachments = self.get_att_by_id(msg[0])
+        return DBMessage(msg[0], author, channel, guild, msg[7], msg[8], attachments)
 
     def update_msg(self, message_id, content):
         self.conn.execute(
@@ -133,6 +129,8 @@ class Database:
         gld = self.conn.execute(
             "SELECT * FROM log_channels WHERE guildid=:id", {"id": guild_id}
         ).fetchone()
+        if gld is None:
+            raise ValueError("Guild not in database")
         return DBGuild(
             gld[0],
             gld[1],
@@ -214,13 +212,13 @@ class Database:
         if len(log_return) > 0:
             return log_return
         else:
-            raise ValueError("No Log of that type.")
+            raise ValueError
 
     def get_tracked_by_id(self, guild_id: int, user_id: int) -> Tracking:
         values = (guild_id, user_id)
         sql = """SELECT * FROM tracking WHERE guildid=? AND userid=?"""
         tracked = self.conn.execute(sql, values).fetchone()
-        try:
+        if tracked is not None:
             return Tracking(
                 tracked[0],
                 tracked[1],
@@ -230,8 +228,7 @@ class Database:
                 tracked[5],
                 tracked[6],
             )
-        except TypeError:
-            return None
+        raise ValueError
 
     def add_tracker(self, new_tracker: Tracking):
         tracker = (
@@ -243,10 +240,9 @@ class Database:
             new_tracker.mod_id,
             new_tracker.mod_name,
         )
-        tracker_check = self.get_tracked_by_id(
-            new_tracker.guild_id, new_tracker.user_id
-        )
-        if tracker_check is None:
+        try:
+            self.get_tracked_by_id(new_tracker.guild_id, new_tracker.user_id)
+        except ValueError:
             sql = """INSERT INTO tracking (userid,username,guildid,channelid,endtime,modid,modname) 
             VALUES(?,?,?,?,?,?,?) """
             try:

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import discord
 from discord.ext import commands
 
@@ -19,7 +21,7 @@ import sqlite3
 
 logs = logging.getLogger("Lumberjack")
 logs.setLevel(logging.DEBUG)
-handler = logging.FileHandler(filename="Logs/lj.log", encoding="utf-8", mode="w")
+handler = logging.FileHandler(filename="Logs/lj.log", encoding="utf-8", mode="a+")
 handler.setFormatter(
     logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
 )
@@ -38,11 +40,13 @@ bot = commands.Bot(
 
 
 if __name__ == "__main__":
-    db = Database(sqlite3.connect("log.db"), logs)
+    with open("schema.sql", "r") as schema_file:
+        db = Database(sqlite3.connect("log.db"), logs, schema_file)
     bot.add_cog(MemberLog(bot, logs, db))
     bot.add_cog(Tracker(bot, logs, db))
     bot.add_cog(Logger(bot, logs, db))
     db.add_all_guilds(bot)
+    logs.info(f"Bot was started at: {datetime.utcnow()}")
 
 
 @bot.event

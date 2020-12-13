@@ -1,6 +1,7 @@
 import logging
 import sqlite3
 import unittest
+from datetime import datetime
 
 from mock import AsyncMock
 
@@ -10,45 +11,42 @@ import discord
 from mockito import mock
 import aiounittest
 
-from Helpers.models import BetterTimeDelta
+from Helpers.models import BetterTimeDelta, BetterDateTime
 
 
 class TestHelperMethods(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.invite = mock(discord.Invite)
+        cls.invite.id = "12345"
+        cls.invite.uses = 10
+        cls.invite2 = mock(discord.Invite)
+        cls.invite2.id = "12345"
+        cls.invite2.uses = 20
+
     def test_add_invite(self):
-        invite = mock(discord.Invite)
-        invite.id = "12345"
-        add_invite(invite)
-        self.assertEqual(invite, get_invite("12345"))
+        add_invite(self.invite)
+        self.assertEqual(self.invite, get_invite("12345"))
 
     def test_update_invite(self):
-        invite = mock(discord.Invite)
-        invite.id = "12345"
-        invite.uses = 10
-        add_invite(invite)
-        self.assertEqual(invite, get_invite("12345"))
+        add_invite(self.invite)
+        self.assertEqual(self.invite, get_invite("12345"))
 
-        invite2 = mock(discord.Invite)
-        invite2.id = "12345"
-        invite2.uses = 20
-        update_invite(invite2)
-        self.assertEqual(invite2, get_invite("12345"))
+        update_invite(self.invite2)
+        self.assertEqual(self.invite2, get_invite("12345"))
 
     def test_remove_invite(self):
-        invite = mock(discord.Invite)
-        invite.id = "12345"
-        invite.uses = 10
-        add_invite(invite)
-        self.assertEqual(invite, get_invite("12345"))
-        remove_invite(invite)
+        add_invite(self.invite)
+        self.assertEqual(self.invite, get_invite("12345"))
+        remove_invite(self.invite)
         with self.assertRaises(Exception) as context:
             get_invite("12345")
         self.assertTrue("No Invite Found", context.exception)
 
     def test_remove_invite_if_invite_missing(self):
-        invite = mock(discord.Invite)
-        invite.id = "12345"
         with self.assertRaises(Exception) as context:
-            remove_invite(invite)
+            remove_invite(self.invite)
         self.assertTrue("No Invite Found", context.exception)
 
     def test_message_splitter(self):
@@ -64,50 +62,43 @@ class TestHelperMethods(unittest.TestCase):
 
 
 class TestAsyncHelperMethods(aiounittest.AsyncTestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.bot = mock(discord.Client)
+        cls.guild1 = AsyncMock(discord.Guild)
+        cls.guild2 = AsyncMock(discord.Guild)
+        cls.invite1 = mock(discord.Invite)
+        cls.invite1.id = "1"
+        cls.invite2 = mock(discord.Invite)
+        cls.invite2.id = "2"
+        cls.invite3 = mock(discord.Invite)
+        cls.invite3.id = "3"
+        cls.invite4 = mock(discord.Invite)
+        cls.invite4.id = "4"
+        cls.guild1.invites.return_value = [cls.invite1, cls.invite2]
+        cls.guild2.invites.return_value = [cls.invite3, cls.invite4]
+        cls.bot.guilds = [cls.guild1, cls.guild2]
+
     async def test_add_all_invites(self):
-        bot = mock(discord.Client)
-        guild1 = AsyncMock(discord.Guild)
-        guild2 = AsyncMock(discord.Guild)
-        invite1 = mock(discord.Invite)
-        invite1.id = "1"
-        invite2 = mock(discord.Invite)
-        invite2.id = "2"
-        invite3 = mock(discord.Invite)
-        invite3.id = "3"
-        invite4 = mock(discord.Invite)
-        invite4.id = "4"
-        guild1.invites.return_value = [invite1, invite2]
-        guild2.invites.return_value = [invite3, invite4]
-        bot.guilds = [guild1, guild2]
-        await add_all_invites(bot)
-        self.assertEqual(invite1, get_invite("1"))
-        self.assertEqual(invite2, get_invite("2"))
-        self.assertEqual(invite3, get_invite("3"))
-        self.assertEqual(invite4, get_invite("4"))
+
+        await add_all_invites(self.bot)
+        self.assertEqual(self.invite1, get_invite("1"))
+        self.assertEqual(self.invite2, get_invite("2"))
+        self.assertEqual(self.invite3, get_invite("3"))
+        self.assertEqual(self.invite4, get_invite("4"))
 
     async def test_add_all_guild_invites(self):
-        guild1 = AsyncMock(discord.Guild)
-        invite1 = mock(discord.Invite)
-        invite1.id = "1"
-        invite2 = mock(discord.Invite)
-        invite2.id = "2"
-        guild1.invites.return_value = [invite1, invite2]
-        await add_all_guild_invites(guild1)
-        self.assertEqual(invite1, get_invite("1"))
-        self.assertEqual(invite2, get_invite("2"))
+        await add_all_guild_invites(self.guild1)
+        self.assertEqual(self.invite1, get_invite("1"))
+        self.assertEqual(self.invite2, get_invite("2"))
 
     async def test_remove_all_guild_invites(self):
-        guild1 = AsyncMock(discord.Guild)
-        invite1 = mock(discord.Invite)
-        invite1.id = "1"
-        invite2 = mock(discord.Invite)
-        invite2.id = "2"
-        guild1.invites.return_value = [invite1, invite2]
-        await add_all_guild_invites(guild1)
-        self.assertEqual(invite1, get_invite("1"))
-        self.assertEqual(invite2, get_invite("2"))
+        await add_all_guild_invites(self.guild1)
+        self.assertEqual(self.invite1, get_invite("1"))
+        self.assertEqual(self.invite2, get_invite("2"))
 
-        await remove_all_guild_invites(guild1)
+        await remove_all_guild_invites(self.guild1)
 
         with self.assertRaises(Exception) as context:
             get_invite("1")
@@ -118,7 +109,8 @@ class TestSetLogChannel(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         test_log = logging.getLogger()
-        cls.db = Database(sqlite3.connect(":memory:"), test_log)
+        with open("../schema.sql", "r") as schema_file:
+            cls.db = Database(sqlite3.connect(":memory:"), test_log, schema_file)
         cls.guild = mock(discord.Guild)
         cls.guild.id = 1
         cls.db.add_guild(cls.guild)
@@ -181,3 +173,9 @@ class BetterTimeDeltaTest(unittest.TestCase):
 
     def test_str_one_second(self):
         self.assertEqual("1 second ", str(BetterTimeDelta(seconds=1)))
+
+    def test_time_delta_subtraction(self):
+        self.assertEqual(
+            "5 hours ",
+            str(BetterDateTime.utcnow() - BetterDateTime.from_datetime(datetime.now())),
+        )

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, time
 from typing import List
 
 
@@ -74,7 +74,7 @@ class Tracking:
         username: str,
         guild_id: int,
         channel_id: int,
-        end_time: int,
+        end_time: datetime,
         mod_id: int,
         mod_name: str,
     ):
@@ -111,6 +111,68 @@ class BetterTimeDelta(timedelta):
             time_string += f"{(self.seconds % 3600) // 60} minute "
         if self.days == 0 and 1 < ((self.seconds % 3600) % 60):
             time_string += f"{(self.seconds % 3600) % 60} seconds "
-        elif self.days == 0:
+        elif self.days == 0 and 1 == ((self.seconds % 3600) % 60):
             time_string += f"{(self.seconds % 3600) % 60} second "
         return time_string
+
+
+_MAXORDINAL = 3652059
+
+
+class BetterDateTime(datetime):
+    @classmethod
+    def from_datetime(cls, new: datetime):
+        self = BetterDateTime(
+            year=new.year,
+            month=new.month,
+            day=new.day,
+            hour=new.hour,
+            minute=new.minute,
+            second=new.second,
+            microsecond=new.microsecond,
+            tzinfo=new.tzinfo,
+            fold=new.fold,
+        )
+        return self
+
+    def __add__(self, other):
+        if not isinstance(other, BetterTimeDelta):
+            return NotImplemented
+        delta = BetterTimeDelta(
+            self.toordinal(),
+            hours=self.hour,
+            minutes=self.minute,
+            seconds=self.second,
+            microseconds=self.microsecond,
+        )
+        delta += other
+        hour, rem = divmod(delta.seconds, 3600)
+        minute, second = divmod(rem, 60)
+        if 0 < delta.days <= _MAXORDINAL:
+            return type(self).combine(
+                date.fromordinal(delta.days),
+                time(hour, minute, second, delta.microseconds, tzinfo=self.tzinfo),
+            )
+        raise OverflowError("result out of range")
+
+    def __sub__(self, other):
+        if not isinstance(other, BetterDateTime):
+            if isinstance(other, BetterTimeDelta):
+                return self + -other
+            return NotImplemented
+        days1 = self.toordinal()
+        days2 = other.toordinal()
+        secs1 = self.second + self.minute * 60 + self.hour * 3600
+        secs2 = other.second + other.minute * 60 + other.hour * 3600
+        base = BetterTimeDelta(
+            days1 - days2, secs1 - secs2, self.microsecond - other.microsecond
+        )
+        if self.tzinfo is other.tzinfo:
+            return base
+        myoff = self.utcoffset()
+        otoff = other.utcoffset()
+        if myoff == otoff:
+            return base
+        if myoff is None or otoff is None:
+            raise TypeError("cannot mix naive and timezone-aware time")
+        return base + otoff - myoff
