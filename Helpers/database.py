@@ -48,16 +48,22 @@ class Database:
             self.conn.execute(sql, values)
             self.conn.commit()
         except sqlite3.Error:
-            self.logs.error("Error entering following message into database: " + str(values))
+            self.logs.error(
+                "Error entering following message into database: " + str(values)
+            )
 
     def get_msg_by_id(self, message_id: int) -> DBMessage:
-        msg = self.conn.execute("SELECT * FROM messages WHERE id=:id", {"id": message_id}).fetchone()
+        msg = self.conn.execute(
+            "SELECT * FROM messages WHERE id=:id", {"id": message_id}
+        ).fetchone()
         try:
             author = DBAuthor(msg[1], msg[2], msg[3], msg[9])
             channel = DBChannel(msg[4], msg[5])
             guild = self.get_log_by_id(msg[6])
             attachments = self.get_att_by_id(msg[0])
-            return DBMessage(msg[0], author, channel, guild, msg[7], msg[8], attachments)
+            return DBMessage(
+                msg[0], author, channel, guild, msg[7], msg[8], attachments
+            )
         except TypeError:
             raise Exception("Message, not in Database")
 
@@ -70,7 +76,9 @@ class Database:
         self.conn.commit()
 
     def get_att_by_id(self, message_id: int) -> List:
-        return self.conn.execute("SELECT * FROM attachment_urls WHERE message_id=:id", {"id": message_id}).fetchall()
+        return self.conn.execute(
+            "SELECT * FROM attachment_urls WHERE message_id=:id", {"id": message_id}
+        ).fetchall()
 
     def add_attachment(self, message_id, attachments):
         for attachment in attachments:
@@ -81,16 +89,24 @@ class Database:
                 )
                 self.conn.commit()
             except sqlite3.Error:
-                logging.error(f"Failed to add attachment of id: {message_id} to the database: {attachment}")
+                logging.error(
+                    f"Failed to add attachment of id: {message_id} to the database: {attachment}"
+                )
 
     def delete_old_db_messages(self):
         old_date = datetime.utcnow() - timedelta(days=31)
         try:
-            self.conn.execute("DELETE FROM messages WHERE DATETIME(created_at) < :timestamp",
-                              {"timestamp": old_date})
-            latest_message = self.conn.execute("SELECT min(id) FROM messages").fetchone()
-            self.conn.execute('DELETE FROM attachment_urls where message_id < :id', {
-                "id": latest_message[0]})
+            self.conn.execute(
+                "DELETE FROM messages WHERE DATETIME(created_at) < :timestamp",
+                {"timestamp": old_date},
+            )
+            latest_message = self.conn.execute(
+                "SELECT min(id) FROM messages"
+            ).fetchone()
+            self.conn.execute(
+                "DELETE FROM attachment_urls where message_id < :id",
+                {"id": latest_message[0]},
+            )
             self.conn.commit()
         except sqlite3.Error:
             self.logs.error("Error deleting old messages from database")
@@ -109,11 +125,27 @@ class Database:
             self.conn.execute(sql, new_guild)
             self.conn.commit()
         except sqlite3.Error:
-            self.logs.error("Failed to enter following guild into database: " + str(guild))
+            self.logs.error(
+                "Failed to enter following guild into database: " + str(guild)
+            )
 
     def get_log_by_id(self, guild_id: int) -> DBGuild:
-        gld = self.conn.execute("SELECT * FROM log_channels WHERE guildid=:id", {"id": guild_id}).fetchone()
-        return DBGuild(gld[0], gld[1], gld[2], gld[3], gld[4], gld[5], gld[6], gld[7], gld[8], gld[9], gld[10])
+        gld = self.conn.execute(
+            "SELECT * FROM log_channels WHERE guildid=:id", {"id": guild_id}
+        ).fetchone()
+        return DBGuild(
+            gld[0],
+            gld[1],
+            gld[2],
+            gld[3],
+            gld[4],
+            gld[5],
+            gld[6],
+            gld[7],
+            gld[8],
+            gld[9],
+            gld[10],
+        )
 
     def update_log_channels(self, guild: DBGuild):
         try:
@@ -130,31 +162,90 @@ class Database:
                 "stat_member=:stats, "
                 "ljid=:ljid "
                 "WHERE guildid=:guildid",
-                {"joinid": guild.join_id, "leaveid": guild.leave_id,
-                 "deleteid": guild.delete_id, "delete_bulk": guild.delete_bulk,
-                 "edit": guild.edit, "username": guild.username, "nickname": guild.nickname,
-                 "avatar": guild.avatar, "stats": guild.stat_member,
-                 "ljid": guild.lj_id, "guildid": guild.id},
+                {
+                    "joinid": guild.join_id,
+                    "leaveid": guild.leave_id,
+                    "deleteid": guild.delete_id,
+                    "delete_bulk": guild.delete_bulk,
+                    "edit": guild.edit,
+                    "username": guild.username,
+                    "nickname": guild.nickname,
+                    "avatar": guild.avatar,
+                    "stats": guild.stat_member,
+                    "ljid": guild.lj_id,
+                    "guildid": guild.id,
+                },
             )
             self.conn.commit()
         except sqlite3.Error:
             self.logs.error(f"Failed to update log channel of guild: {guild}")
+
+    def set_log_channel(self, log_type: str, guild_id: int, channel_id: int) -> str:
+        log_channels = self.get_log_by_id(guild_id)
+        log_return = ""
+        if log_type == "join":
+            log_channels.join_id = channel_id
+            log_return = "Join"
+        elif log_type == "leave":
+            log_channels.leave_id = channel_id
+            log_return = "Leave"
+        elif log_type == "delete":
+            log_channels.delete_id = channel_id
+            log_return = "Delete"
+        elif log_type == "bulk_delete":
+            log_channels.delete_bulk = channel_id
+            log_return = "Bulk Delete"
+        elif log_type == "edit":
+            log_channels.edit = channel_id
+            log_return = "Edit"
+        elif log_type == "username":
+            log_channels.username = channel_id
+            log_return = "Username"
+        elif log_type == "nickname":
+            log_channels.nickname = channel_id
+            log_return = "Nickname"
+        elif log_type == "avatar":
+            log_channels.avatar = channel_id
+            log_return = "Avatar"
+        elif log_type == "ljlog":
+            log_channels.lj_id = channel_id
+            log_return = "Lumberjack Logs"
+        self.update_log_channels(log_channels)
+        if len(log_return) > 0:
+            return log_return
+        else:
+            raise ValueError("No Log of that type.")
 
     def get_tracked_by_id(self, guild_id: int, user_id: int) -> Tracking:
         values = (guild_id, user_id)
         sql = """SELECT * FROM tracking WHERE guildid=? AND userid=?"""
         tracked = self.conn.execute(sql, values).fetchone()
         try:
-            return Tracking(tracked[0], tracked[1], tracked[2], tracked[3],
-                            tracked[4], tracked[5], tracked[6])
+            return Tracking(
+                tracked[0],
+                tracked[1],
+                tracked[2],
+                tracked[3],
+                tracked[4],
+                tracked[5],
+                tracked[6],
+            )
         except TypeError:
             return None
 
     def add_tracker(self, new_tracker: Tracking):
-        tracker = (new_tracker.user_id, new_tracker.username, new_tracker.guild_id,
-                   new_tracker.channel_id, new_tracker.end_time, new_tracker.mod_id,
-                   new_tracker.mod_name)
-        tracker_check = self.get_tracked_by_id(new_tracker.guild_id, new_tracker.user_id)
+        tracker = (
+            new_tracker.user_id,
+            new_tracker.username,
+            new_tracker.guild_id,
+            new_tracker.channel_id,
+            new_tracker.end_time,
+            new_tracker.mod_id,
+            new_tracker.mod_name,
+        )
+        tracker_check = self.get_tracked_by_id(
+            new_tracker.guild_id, new_tracker.user_id
+        )
         if tracker_check is None:
             sql = """INSERT INTO tracking (userid,username,guildid,channelid,endtime,modid,modname) 
             VALUES(?,?,?,?,?,?,?) """
@@ -203,12 +294,16 @@ class Database:
             self.conn.execute(sql, (message.id, message.channel.id, datetime.utcnow()))
             self.conn.commit()
         except sqlite3.Error:
-            self.logs.error(f"Failed to add following lumberjack message into database: {message}")
+            self.logs.error(
+                f"Failed to add following lumberjack message into database: {message}"
+            )
 
     def get_old_lumberjack_messages(self):
         old_date = datetime.utcnow() - timedelta(days=31)
-        messages = self.conn.execute("SELECT * FROM lumberjack_messages WHERE DATETIME(created_at) < :timestamp",
-                                     {"timestamp": old_date}).fetchall()
+        messages = self.conn.execute(
+            "SELECT * FROM lumberjack_messages WHERE DATETIME(created_at) < :timestamp",
+            {"timestamp": old_date},
+        ).fetchall()
         lj_messages = []
         for message in messages:
             try:
@@ -220,8 +315,10 @@ class Database:
 
     def delete_lumberjack_messages_from_db(self, message_id):
         try:
-            self.conn.execute("DELETE FROM lumberjack_messages WHERE message_id=:message_id",
-                              {"message_id": message_id})
+            self.conn.execute(
+                "DELETE FROM lumberjack_messages WHERE message_id=:message_id",
+                {"message_id": message_id},
+            )
             self.conn.commit()
         except sqlite3.Error:
             self.logs.error("Failed to delete old LJ Messages from Database")

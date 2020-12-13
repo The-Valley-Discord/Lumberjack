@@ -18,7 +18,9 @@ class Tracker(commands.Cog):
 
     @commands.command()
     @commands.check_any(has_permissions())
-    async def track(self, ctx, user: discord.Member, time, channel: discord.TextChannel):
+    async def track(
+        self, ctx, user: discord.Member, time, channel: discord.TextChannel
+    ):
         tracking_time = 0
         if time[-1].lower() == "d":
             time_limit = timedelta(days=int(time[:-1]))
@@ -43,13 +45,17 @@ class Tracker(commands.Cog):
 
             gld = self.db.get_log_by_id(ctx.guild.id)
             logs = self.bot.get_channel(gld.lj_id)
-            self.db.add_tracker(Tracking(user.id,
-                                         username,
-                                         ctx.guild.id,
-                                         channel.id,
-                                         tracking_time,
-                                         ctx.author.id,
-                                         modname, ))
+            self.db.add_tracker(
+                Tracking(
+                    user.id,
+                    username,
+                    ctx.guild.id,
+                    channel.id,
+                    tracking_time,
+                    ctx.author.id,
+                    modname,
+                )
+            )
             await ctx.send(f"A Tracker has been placed on {username} for {time}")
             await logs.send(f"{modname} placed a tracker on {user.mention} for {time}")
 
@@ -135,15 +141,16 @@ class Tracker(commands.Cog):
         before = self.db.get_msg_by_id(payload.message_id)
         author = self.bot.get_user(before.author.id)
         tracker = self.db.get_tracked_by_id(channel.guild.id, before.author.id)
-        if 'content' not in payload.data:
-            payload.data['content'] = ''
+        if "content" not in payload.data:
+            payload.data["content"] = ""
         if tracker is None:
             pass
         else:
             channel = self.bot.get_channel(tracker.channel_id)
             embed = discord.Embed(
                 description=f"**[Jump Url](https://discordapp.com/channels/"
-                            f"{channel.guild.id}/{payload.channel_id}/{payload.message_id})**", color=0xFFF1D7,
+                f"{channel.guild.id}/{payload.channel_id}/{payload.message_id})**",
+                color=0xFFF1D7,
             )
             embed.set_author(name=f"#{channel.name}")
             embed.set_footer(
@@ -154,21 +161,23 @@ class Tracker(commands.Cog):
             if len(before.clean_content) == 0:
                 embed.add_field(name=f"**Before**", value=f"`Blank`", inline=False)
             elif len(before.clean_content) <= 1024:
-                embed.add_field(name=f"**Before**", value=f"{before.clean_content} ", inline=False)
+                embed.add_field(
+                    name=f"**Before**", value=f"{before.clean_content} ", inline=False
+                )
             else:
                 prts = before.clean_content
                 prt_1 = prts[:1024]
                 prt_2 = prts[1024:]
                 embed.add_field(name=f"**Before**", value=f"{prt_1}", inline=False)
                 embed.add_field(name=f"Continued", value=f"{prt_2}")
-            if len(payload.data['content']) == 0:
+            if len(payload.data["content"]) == 0:
                 embed.add_field(name=f"**After**", value=f"`Blank`", inline=False)
-            elif len(payload.data['content']) <= 1024:
+            elif len(payload.data["content"]) <= 1024:
                 embed.add_field(
                     name=f"**After**", value=f"{payload.data['content']} ", inline=False
                 )
             else:
-                prts = payload.data['content']
+                prts = payload.data["content"]
                 prt_1 = prts[:1024]
                 prt_2 = prts[1024:]
                 embed.add_field(name=f"**After**", value=f"{prt_1}", inline=False)
@@ -192,7 +201,8 @@ class Tracker(commands.Cog):
                 )
                 embed.set_author(name="Joined Voice Channel")
                 embed.set_footer(
-                    text=f"{tracker.username}\n({member.id}) ", icon_url=member.avatar_url
+                    text=f"{tracker.username}\n({member.id}) ",
+                    icon_url=member.avatar_url,
                 )
                 embed.timestamp = datetime.utcnow()
                 await channel.send(embed=embed)
@@ -202,19 +212,21 @@ class Tracker(commands.Cog):
                 )
                 embed.set_author(name="Left Voice Channel")
                 embed.set_footer(
-                    text=f"{tracker.username}\n({member.id})", icon_url=member.avatar_url
+                    text=f"{tracker.username}\n({member.id})",
+                    icon_url=member.avatar_url,
                 )
                 embed.timestamp = datetime.utcnow()
                 await channel.send(embed=embed)
             elif after.channel != before.channel:
                 embed = discord.Embed(
                     description=f"**From:** {before.channel.name}\n"
-                                f"**To:** {after.channel.name}",
+                    f"**To:** {after.channel.name}",
                     color=0xFF0080,
                 )
                 embed.set_author(name="Moved Voice Channels")
                 embed.set_footer(
-                    text=f"{tracker.username}\n({member.id})", icon_url=member.avatar_url
+                    text=f"{tracker.username}\n({member.id})",
+                    icon_url=member.avatar_url,
                 )
                 embed.timestamp = datetime.utcnow()
                 await channel.send(embed=embed)
@@ -250,8 +262,8 @@ class Tracker(commands.Cog):
                 pass
             else:
                 if (
-                        before.name != after.name
-                        or before.discriminator != after.discriminator
+                    before.name != after.name
+                    or before.discriminator != after.discriminator
                 ):
                     channel = self.bot.get_channel(tracker.channel_id)
                     if channel is None:

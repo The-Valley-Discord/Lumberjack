@@ -3,7 +3,13 @@ from discord.ext import commands
 
 from Helpers.database import Database
 
-from Helpers.helpers import add_invite, remove_invite, add_all_invites, add_all_guild_invites, remove_all_guild_invites
+from Helpers.helpers import (
+    add_invite,
+    remove_invite,
+    add_all_invites,
+    add_all_guild_invites,
+    remove_all_guild_invites,
+)
 from Cogs.logger import Logger
 from Cogs.member_log import MemberLog
 from Cogs.tracker import Tracker
@@ -13,16 +19,22 @@ import sqlite3
 
 logs = logging.getLogger("Lumberjack")
 logs.setLevel(logging.DEBUG)
-handler = logging.FileHandler(filename="Logs/lj.log", encoding="utf-8", mode='w')
-handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+handler = logging.FileHandler(filename="Logs/lj.log", encoding="utf-8", mode="w")
+handler.setFormatter(
+    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
+)
 logs.addHandler(handler)
 
 intents = discord.Intents.default()
 intents.members = True
 
-bot = commands.Bot(command_prefix="bum.", intents=intents, activity=discord.Activity(
-            type=discord.ActivityType.watching, name="with ten thousand eyes."
-        ))
+bot = commands.Bot(
+    command_prefix="bum.",
+    intents=intents,
+    activity=discord.Activity(
+        type=discord.ActivityType.watching, name="with ten thousand eyes."
+    ),
+)
 
 
 if __name__ == "__main__":

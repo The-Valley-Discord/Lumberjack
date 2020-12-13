@@ -3,8 +3,20 @@ from typing import List
 
 
 class DBGuild(object):
-    def __init__(self, guild_id: int, join_id: int, leave_id: int, delete_id: int, delete_bulk: int, edit: int,
-                 username: int, nickname: int, avatar: int, stat_member: int, lj_id: int):
+    def __init__(
+        self,
+        guild_id: int,
+        join_id: int,
+        leave_id: int,
+        delete_id: int,
+        delete_bulk: int,
+        edit: int,
+        username: int,
+        nickname: int,
+        avatar: int,
+        stat_member: int,
+        lj_id: int,
+    ):
         self.id = guild_id
         self.join_id = join_id
         self.leave_id = leave_id
@@ -36,8 +48,16 @@ class DBChannel(object):
 
 
 class DBMessage:
-    def __init__(self: object, message_id: int, author: DBAuthor, channel: DBChannel, guild: DBGuild,
-                 clean_content: str, created_at: datetime, attachments: List):
+    def __init__(
+        self: object,
+        message_id: int,
+        author: DBAuthor,
+        channel: DBChannel,
+        guild: DBGuild,
+        clean_content: str,
+        created_at: datetime,
+        attachments: List,
+    ):
         self.id = message_id
         self.author = author
         self.channel = channel
@@ -48,8 +68,16 @@ class DBMessage:
 
 
 class Tracking:
-    def __init__(self, user_id: int, username: str, guild_id: int, channel_id: int, end_time: int, mod_id: int,
-                 mod_name: str):
+    def __init__(
+        self,
+        user_id: int,
+        username: str,
+        guild_id: int,
+        channel_id: int,
+        end_time: int,
+        mod_id: int,
+        mod_name: str,
+    ):
         self.user_id = user_id
         self.username = username
         self.guild_id = guild_id

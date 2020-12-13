@@ -6,7 +6,7 @@ import typing
 from discord.ext import commands
 
 from Helpers.database import Database
-from Helpers.helpers import has_permissions, set_log_channel, format_datetime
+from Helpers.helpers import has_permissions, format_datetime
 
 
 class Logger(commands.Cog):
@@ -26,7 +26,7 @@ class Logger(commands.Cog):
     async def log(self, ctx, log_type, channel: typing.Union[discord.TextChannel, str]):
         if isinstance(channel, str) and channel == "here":
             channel = ctx.channel
-        log_name = set_log_channel(log_type.lower(), ctx.guild.id, channel.id, self.db)
+        log_name = self.db.set_log_channel(log_type.lower(), ctx.guild.id, channel.id)
         if len(log_name) == 0:
             await ctx.send(
                 "Incorrect log type. Please use one of the following. Join, Leave, "
@@ -37,13 +37,15 @@ class Logger(commands.Cog):
 
     @log.error
     async def log_error(self, ctx, error):
-        if isinstance(error, commands.BadArgument) or isinstance(error, commands.CommandInvokeError):
+        if isinstance(error, commands.BadArgument) or isinstance(
+            error, commands.CommandInvokeError
+        ):
             await ctx.send("Please enter a valid channel")
 
     @commands.command()
     @commands.check_any(has_permissions())
     async def clear(self, ctx, log_type):
-        log_name = set_log_channel(log_type.lower(), ctx.guild.id, 0, self.db)
+        log_name = self.db.set_log_channel(log_type.lower(), ctx.guild.id, 0)
         if len(log_name) == 0:
             await ctx.send(
                 "Incorrect log type. Please use one of the following. Join, Leave, "
@@ -66,7 +68,9 @@ class Logger(commands.Cog):
             author = channel.guild.get_member(msg.author.id)
             polyphony_role = 0
             if author.guild.id == 539925898128785460:
-                polyphony_role = self.bot.get_guild(539925898128785460).get_role(732962687360827472)
+                polyphony_role = self.bot.get_guild(539925898128785460).get_role(
+                    732962687360827472
+                )
             if logs is None or author is None:
                 pass
             elif author.bot and polyphony_role not in author.roles:
@@ -84,7 +88,9 @@ class Logger(commands.Cog):
                 if len(msg.clean_content) == 0:
                     pass
                 elif len(msg.clean_content) <= 1024:
-                    embed.add_field(name=f"**Content**", value=f"{msg.clean_content}", inline=False)
+                    embed.add_field(
+                        name=f"**Content**", value=f"{msg.clean_content}", inline=False
+                    )
                 else:
                     parts = msg.clean_content
                     prt_1 = parts[:1024]
@@ -100,10 +106,14 @@ class Logger(commands.Cog):
                         attachments.append(attachment[1])
                     attachments_str = " ".join(attachments)
                     embed.add_field(
-                        name=f"**Attachments**", value=f"{attachments_str}", inline=False
+                        name=f"**Attachments**",
+                        value=f"{attachments_str}",
+                        inline=False,
                     )
                     embed.set_image(url=attachments[0])
-                embed.set_author(name=f"{author.name}#{author.discriminator} ({author.id})")
+                embed.set_author(
+                    name=f"{author.name}#{author.discriminator} ({author.id})"
+                )
                 embed.set_thumbnail(url=author.avatar_url)
                 embed.set_footer(text=f"")
                 embed.timestamp = datetime.utcnow()
@@ -166,10 +176,16 @@ class Logger(commands.Cog):
             author = channel.guild.get_member(before.author.id)
             polyphony_role = 0
             if channel.guild.id == 539925898128785460:
-                polyphony_role = self.bot.get_guild(539925898128785460).get_role(732962687360827472)
-            if 'content' not in payload.data:
-                payload.data['content'] = ''
-            if logs is None or before is None or before.clean_content == payload.data['content']:
+                polyphony_role = self.bot.get_guild(539925898128785460).get_role(
+                    732962687360827472
+                )
+            if "content" not in payload.data:
+                payload.data["content"] = ""
+            if (
+                logs is None
+                or before is None
+                or before.clean_content == payload.data["content"]
+            ):
                 pass
             elif author.bot and polyphony_role not in author.roles:
                 pass
@@ -191,21 +207,27 @@ class Logger(commands.Cog):
                 if len(before.clean_content) == 0:
                     embed.add_field(name=f"**Before**", value=f"`Blank`", inline=False)
                 elif len(before.clean_content) <= 1024:
-                    embed.add_field(name=f"**Before**", value=f"{before.clean_content} ", inline=False)
+                    embed.add_field(
+                        name=f"**Before**",
+                        value=f"{before.clean_content} ",
+                        inline=False,
+                    )
                 else:
                     prts = before.clean_content
                     prt_1 = prts[:1024]
                     prt_2 = prts[1024:]
                     embed.add_field(name=f"**Before**", value=f"{prt_1}", inline=False)
                     embed.add_field(name=f"Continued", value=f"{prt_2}")
-                if len(payload.data['content']) == 0:
+                if len(payload.data["content"]) == 0:
                     embed.add_field(name=f"**After**", value=f"`Blank`", inline=False)
-                elif len(payload.data['content']) <= 1024:
+                elif len(payload.data["content"]) <= 1024:
                     embed.add_field(
-                        name=f"**After**", value=f"{payload.data['content']} ", inline=False
+                        name=f"**After**",
+                        value=f"{payload.data['content']} ",
+                        inline=False,
                     )
                 else:
-                    prts = payload.data['content']
+                    prts = payload.data["content"]
                     prt_1 = prts[:1024]
                     prt_2 = prts[1024:]
                     embed.add_field(name=f"**After**", value=f"{prt_1}", inline=False)
@@ -214,7 +236,7 @@ class Logger(commands.Cog):
                 embed.timestamp = datetime.utcnow()
                 message = await logs.send(embed=embed)
                 self.db.add_lumberjack_message(message)
-                content = payload.data['content']
+                content = payload.data["content"]
                 self.db.update_msg(payload.message_id, content)
         except TypeError:
             print("Edit Message log failed because message not in database.")
