@@ -1,7 +1,9 @@
 import logging
 import sqlite3
+import string
 import unittest
 from datetime import datetime
+import random
 
 from mock import AsyncMock
 
@@ -12,6 +14,9 @@ from mockito import mock
 import aiounittest
 
 from Helpers.models import BetterTimeDelta, BetterDateTime
+
+if __name__ == '__main__':
+    unittest.main()
 
 
 class TestHelperMethods(unittest.TestCase):
@@ -42,12 +47,12 @@ class TestHelperMethods(unittest.TestCase):
         remove_invite(self.invite)
         with self.assertRaises(Exception) as context:
             get_invite("12345")
-        self.assertTrue("No Invite Found", context.exception)
+        self.assertEqual("No Invite Found", str(context.exception))
 
     def test_remove_invite_if_invite_missing(self):
         with self.assertRaises(Exception) as context:
             remove_invite(self.invite)
-        self.assertTrue("No Invite Found", context.exception)
+        self.assertEqual("No Invite Found", str(context.exception))
 
     def test_message_splitter(self):
         self.assertEqual(["12", "3"], message_splitter("123", 2))
@@ -58,7 +63,16 @@ class TestHelperMethods(unittest.TestCase):
     def test_message_splitter_error(self):
         with self.assertRaises(ValueError) as context:
             message_splitter("", 3)
-        self.assertTrue("Message has no contents", context.exception)
+        self.assertEqual("Message has no contents", str(context.exception))
+
+    def test_field_message_splitter(self):
+        embed = discord.Embed()
+        text = ''.join(random.choices(string.ascii_uppercase + string.digits, k=1050))
+        embed = field_message_splitter(embed, text, "Test")
+        self.assertEqual("**Test**", embed.fields[0].name)
+        self.assertEqual(f"{text[:1024]} ", embed.fields[0].value)
+        self.assertEqual("Continued", embed.fields[1].name)
+        self.assertEqual(text[1024:], embed.fields[1].value)
 
 
 class TestAsyncHelperMethods(aiounittest.AsyncTestCase):
@@ -102,59 +116,7 @@ class TestAsyncHelperMethods(aiounittest.AsyncTestCase):
 
         with self.assertRaises(Exception) as context:
             get_invite("1")
-        self.assertTrue("No Invite Found", context.exception)
-
-
-class TestSetLogChannel(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        test_log = logging.getLogger()
-        with open("../schema.sql", "r") as schema_file:
-            cls.db = Database(sqlite3.connect(":memory:"), test_log, schema_file)
-        cls.guild = mock(discord.Guild)
-        cls.guild.id = 1
-        cls.db.add_guild(cls.guild)
-
-    def test_join(self):
-        self.assertEqual("Join", self.db.set_log_channel("join", 1, 2))
-        self.assertEqual(2, self.db.get_log_by_id(1).join_id)
-
-    def test_leave(self):
-        self.assertEqual("Leave", self.db.set_log_channel("leave", 1, 2))
-        self.assertEqual(2, self.db.get_log_by_id(1).leave_id)
-
-    def test_delete(self):
-        self.assertEqual("Delete", self.db.set_log_channel("delete", 1, 2))
-        self.assertEqual(2, self.db.get_log_by_id(1).delete_id)
-
-    def test_buik_delete(self):
-        self.assertEqual("Bulk Delete", self.db.set_log_channel("bulk_delete", 1, 2))
-        self.assertEqual(2, self.db.get_log_by_id(1).delete_bulk)
-
-    def test_edit(self):
-        self.assertEqual("Edit", self.db.set_log_channel("edit", 1, 2))
-        self.assertEqual(2, self.db.get_log_by_id(1).edit)
-
-    def test_username(self):
-        self.assertEqual("Username", self.db.set_log_channel("username", 1, 2))
-        self.assertEqual(2, self.db.get_log_by_id(1).username)
-
-    def test_nickname(self):
-        self.assertEqual("Nickname", self.db.set_log_channel("nickname", 1, 2))
-        self.assertEqual(2, self.db.get_log_by_id(1).nickname)
-
-    def test_avatar(self):
-        self.assertEqual("Avatar", self.db.set_log_channel("avatar", 1, 2))
-        self.assertEqual(2, self.db.get_log_by_id(1).avatar)
-
-    def test_lj_log(self):
-        self.assertEqual("Lumberjack Logs", self.db.set_log_channel("ljlog", 1, 2))
-        self.assertEqual(2, self.db.get_log_by_id(1).lj_id)
-
-    def test_error(self):
-        with self.assertRaises(ValueError) as context:
-            self.db.set_log_channel("test", 1, 2)
-        self.assertTrue("No Invite Found", context.exception)
+        self.assertEqual("No Invite Found", str(context.exception))
 
 
 class BetterTimeDeltaTest(unittest.TestCase):

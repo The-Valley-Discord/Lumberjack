@@ -4,7 +4,6 @@ from typing import List, TextIO
 import sqlite3
 
 import discord
-from discord import Message, Guild
 from discord.ext.commands import Bot
 
 from Helpers.models import DBMessage, DBAuthor, DBChannel, DBGuild, Tracking, LJMessage
@@ -21,7 +20,7 @@ class Database:
         except sqlite3.Error:
             logs.error("Failed creating database from schema.sql")
 
-    def add_message(self, message: Message):
+    def add_message(self, message: discord.Message):
         attachments = [f"{attachment.proxy_url}" for attachment in message.attachments]
         attachment_bool = False
         if len(attachments) > 0:
@@ -56,7 +55,7 @@ class Database:
             "SELECT * FROM messages WHERE id=:id", {"id": message_id}
         ).fetchone()
         if msg is None:
-            raise KeyError("Retrieved message not in database.")
+            raise ValueError("Retrieved message not in database.")
         author = DBAuthor(msg[1], msg[2], msg[3], msg[9])
         channel = DBChannel(msg[4], msg[5])
         guild = self.get_log_by_id(msg[6])
@@ -113,7 +112,7 @@ class Database:
             if gld is None:
                 self.add_guild(guild)
 
-    def add_guild(self, guild: Guild):
+    def add_guild(self, guild: discord.Guild):
         new_guild = (guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         sql = """INSERT INTO log_channels (guildid,joinid,leaveid,deleteid,delete_bulk,edit,username,nickname,
         avatar,stat_member) VALUES(?,?,?,?,?,?,?,?,?,?) """
@@ -212,7 +211,7 @@ class Database:
         if len(log_return) > 0:
             return log_return
         else:
-            raise ValueError
+            raise ValueError("Log type not found.")
 
     def get_tracked_by_id(self, guild_id: int, user_id: int) -> Tracking:
         values = (guild_id, user_id)
@@ -228,7 +227,7 @@ class Database:
                 tracked[5],
                 tracked[6],
             )
-        raise ValueError
+        raise ValueError("User not being tracked.")
 
     def add_tracker(self, new_tracker: Tracking):
         tracker = (

@@ -70,11 +70,11 @@ class Logger(commands.Cog):
         except discord.HTTPException or ValueError as e:
             self.logs.error(f"Error in on_raw_message_delete because: {e}")
             return
-        if gld.delete_id == 0:
+        if logs is None:
             return
         try:
             msg = self.db.get_msg_by_id(payload.message_id)
-        except KeyError as e:
+        except ValueError as e:
             self.logs.debug(f"on_raw_message_delete: {payload.message_id} {e}")
         else:
             author = channel.guild.get_member(msg.author.id)
@@ -129,7 +129,7 @@ class Logger(commands.Cog):
         for message_id in message_ids:
             try:
                 message = self.db.get_msg_by_id(message_id)
-            except KeyError as e:
+            except ValueError as e:
                 self.logs.debug(f"on_raw_bulk_message_delete: {message_id} {e} ")
             else:
                 if self.bot.user.id == message.author.id:
@@ -188,7 +188,7 @@ class Logger(commands.Cog):
             return
         try:
             before = self.db.get_msg_by_id(payload.message_id)
-        except KeyError as e:
+        except ValueError as e:
             self.logs.debug(f"on_raw_message_edit: {payload.message_id} {e}")
         else:
             author = channel.guild.get_member(before.author.id)
