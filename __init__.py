@@ -1,10 +1,14 @@
+import logging
+import sqlite3
 from datetime import datetime
 
 import discord
 from discord.ext import commands
 
+from Cogs.logger import Logger
+from Cogs.member_log import MemberLog
+from Cogs.tracker import Tracker
 from Helpers.database import Database
-
 from Helpers.helpers import (
     add_invite,
     remove_invite,
@@ -12,12 +16,6 @@ from Helpers.helpers import (
     add_all_guild_invites,
     remove_all_guild_invites,
 )
-from Cogs.logger import Logger
-from Cogs.member_log import MemberLog
-from Cogs.tracker import Tracker
-
-import logging
-import sqlite3
 
 logs = logging.getLogger("Lumberjack")
 logs.setLevel(logging.DEBUG)
@@ -37,7 +35,6 @@ bot = commands.Bot(
         type=discord.ActivityType.watching, name="with ten thousand eyes."
     ),
 )
-
 
 if __name__ == "__main__":
     with open("schema.sql", "r") as schema_file:

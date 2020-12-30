@@ -1,32 +1,26 @@
-import logging
-import sqlite3
+import random
 import string
 import unittest
 from datetime import datetime
-import random
 
-from mock import AsyncMock
-
-from Helpers.database import Database
-from Helpers.helpers import *
-import discord
-from mockito import mock
 import aiounittest
+import discord
+from mock import AsyncMock, Mock
 
+from Helpers.helpers import *
 from Helpers.models import BetterTimeDelta, BetterDateTime
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
 
 
 class TestHelperMethods(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
-        cls.invite = mock(discord.Invite)
+        cls.invite = Mock(discord.Invite)
         cls.invite.id = "12345"
         cls.invite.uses = 10
-        cls.invite2 = mock(discord.Invite)
+        cls.invite2 = Mock(discord.Invite)
         cls.invite2.id = "12345"
         cls.invite2.uses = 20
 
@@ -67,7 +61,7 @@ class TestHelperMethods(unittest.TestCase):
 
     def test_field_message_splitter(self):
         embed = discord.Embed()
-        text = ''.join(random.choices(string.ascii_uppercase + string.digits, k=1050))
+        text = "".join(random.choices(string.ascii_uppercase + string.digits, k=1050))
         embed = field_message_splitter(embed, text, "Test")
         self.assertEqual("**Test**", embed.fields[0].name)
         self.assertEqual(f"{text[:1024]} ", embed.fields[0].value)
@@ -76,26 +70,24 @@ class TestHelperMethods(unittest.TestCase):
 
 
 class TestAsyncHelperMethods(aiounittest.AsyncTestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
-        cls.bot = mock(discord.Client)
+        cls.bot = Mock(discord.Client)
         cls.guild1 = AsyncMock(discord.Guild)
         cls.guild2 = AsyncMock(discord.Guild)
-        cls.invite1 = mock(discord.Invite)
+        cls.invite1 = Mock(discord.Invite)
         cls.invite1.id = "1"
-        cls.invite2 = mock(discord.Invite)
+        cls.invite2 = Mock(discord.Invite)
         cls.invite2.id = "2"
-        cls.invite3 = mock(discord.Invite)
+        cls.invite3 = Mock(discord.Invite)
         cls.invite3.id = "3"
-        cls.invite4 = mock(discord.Invite)
+        cls.invite4 = Mock(discord.Invite)
         cls.invite4.id = "4"
         cls.guild1.invites.return_value = [cls.invite1, cls.invite2]
         cls.guild2.invites.return_value = [cls.invite3, cls.invite4]
         cls.bot.guilds = [cls.guild1, cls.guild2]
 
     async def test_add_all_invites(self):
-
         await add_all_invites(self.bot)
         self.assertEqual(self.invite1, get_invite("1"))
         self.assertEqual(self.invite2, get_invite("2"))

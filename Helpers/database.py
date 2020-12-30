@@ -1,7 +1,7 @@
 import logging
+import sqlite3
 from datetime import datetime, timedelta
 from typing import List, TextIO
-import sqlite3
 
 import discord
 from discord.ext.commands import Bot
@@ -60,7 +60,15 @@ class Database:
         channel = DBChannel(msg[4], msg[5])
         guild = self.get_log_by_id(msg[6])
         attachments = self.get_att_by_id(msg[0])
-        return DBMessage(msg[0], author, channel, guild, msg[7], msg[8], attachments)
+        return DBMessage(
+            msg[0],
+            author,
+            channel,
+            guild,
+            msg[7],
+            datetime.strptime(msg[8], "%Y-%m-%d %H:%M:%S.%f"),
+            attachments,
+        )
 
     def update_msg(self, message_id, content):
         self.conn.execute(
@@ -223,7 +231,7 @@ class Database:
                 tracked[1],
                 tracked[2],
                 tracked[3],
-                tracked[4],
+                datetime.strptime(tracked[4], "%Y-%m-%d %H:%M:%S.%f"),
                 tracked[5],
                 tracked[6],
             )
@@ -286,7 +294,7 @@ class Database:
         sql = """INSERT INTO lumberjack_messages (message_id, channel_id, created_at) 
                VALUES(?,?,?) """
         try:
-            self.conn.execute(sql, (message.id, message.channel.id, datetime.utcnow()))
+            self.conn.execute(sql, (message.id, message.channel.id, message.created_at))
             self.conn.commit()
         except sqlite3.Error:
             self.logs.error(
@@ -302,7 +310,13 @@ class Database:
         lj_messages = []
         for message in messages:
             try:
-                lj_messages.append(LJMessage(message[0], message[1], message[2]))
+                lj_messages.append(
+                    LJMessage(
+                        message[0],
+                        message[1],
+                        datetime.strptime(message[2], "%Y-%m-%d " "%H:%M:%S.%f"),
+                    )
+                )
             except TypeError:
                 self.logs.error("No old LJ Messages in database")
 

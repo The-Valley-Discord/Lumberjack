@@ -4,18 +4,18 @@ from typing import List
 
 class DBGuild(object):
     def __init__(
-            self,
-            guild_id: int,
-            join_id: int,
-            leave_id: int,
-            delete_id: int,
-            delete_bulk: int,
-            edit: int,
-            username: int,
-            nickname: int,
-            avatar: int,
-            stat_member: int,
-            lj_id: int,
+        self,
+        guild_id: int,
+        join_id: int,
+        leave_id: int,
+        delete_id: int,
+        delete_bulk: int,
+        edit: int,
+        username: int,
+        nickname: int,
+        avatar: int,
+        stat_member: int,
+        lj_id: int,
     ):
         self.id = guild_id
         self.join_id = join_id
@@ -49,14 +49,14 @@ class DBChannel(object):
 
 class DBMessage:
     def __init__(
-            self: object,
-            message_id: int,
-            author: DBAuthor,
-            channel: DBChannel,
-            guild: DBGuild,
-            clean_content: str,
-            created_at: datetime,
-            attachments: List,
+        self: object,
+        message_id: int,
+        author: DBAuthor,
+        channel: DBChannel,
+        guild: DBGuild,
+        clean_content: str,
+        created_at: datetime,
+        attachments: List,
     ):
         self.id = message_id
         self.author = author
@@ -69,14 +69,14 @@ class DBMessage:
 
 class Tracking:
     def __init__(
-            self,
-            user_id: int,
-            username: str,
-            guild_id: int,
-            channel_id: int,
-            end_time: datetime,
-            mod_id: int,
-            mod_name: str,
+        self,
+        user_id: int,
+        username: str,
+        guild_id: int,
+        channel_id: int,
+        end_time: datetime,
+        mod_id: int,
+        mod_name: str,
     ):
         self.user_id = user_id
         self.username = username
@@ -89,17 +89,22 @@ class Tracking:
     def __eq__(self, o: object) -> bool:
         if not isinstance(o, Tracking):
             return False
-        return (self.user_id == o.user_id and
-                self.username == o.username and
-                self.guild_id == o.guild_id and
-                self.channel_id == o.channel_id and
-                self.mod_id == o.mod_id and
-                self.mod_name == o.mod_name)
+        return (
+            self.user_id == o.user_id
+            and self.username == o.username
+            and self.guild_id == o.guild_id
+            and self.channel_id == o.channel_id
+            and self.end_time == o.end_time
+            and self.mod_id == o.mod_id
+            and self.mod_name == o.mod_name
+        )
 
     def __repr__(self) -> str:
-        return f'User_id: {self.user_id}, Username: {self.username}, Guild_id: {self.guild_id}, ' \
-               f'Channel_id: {self.channel_id}, End_time: {self.end_time}, Mod_id {self.mod_id}, ' \
-               f'Mod_name: {self.mod_name}'
+        return (
+            f"User_id: {self.user_id}, Username: {self.username}, Guild_id: {self.guild_id}, "
+            f"Channel_id: {self.channel_id}, End_time: {self.end_time}, Mod_id {self.mod_id}, "
+            f"Mod_name: {self.mod_name}"
+        )
 
 
 class LJMessage:

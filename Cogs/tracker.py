@@ -95,9 +95,8 @@ class Tracker(commands.Cog):
             attachments = [
                 f"{attachment.proxy_url}" for attachment in message.attachments
             ]
-            end_time = datetime.strptime(tracker.end_time, "%Y-%m-%d %H:%M:%S.%f")
             channel = self.bot.get_channel(tracker.channel_id)
-            if end_time < datetime.utcnow():
+            if tracker.end_time < datetime.utcnow():
                 self.db.remove_tracker(message.guild.id, message.author.id)
                 embed = discord.Embed(
                     description=f"""Tracker on {tracker.username} has expired""",

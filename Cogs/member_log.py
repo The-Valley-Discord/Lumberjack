@@ -20,7 +20,9 @@ class MemberLog(commands.Cog):
     async def on_member_join(self, member):
         gld = self.db.get_log_by_id(member.guild.id)
         logs = self.bot.get_channel(gld.join_id)
-        account_age = BetterDateTime.utcnow() - BetterDateTime.from_datetime(member.created_at)
+        account_age = BetterDateTime.utcnow() - BetterDateTime.from_datetime(
+            member.created_at
+        )
         invite_used = "Vanity URL"
         invite_uses = ""
         inviter = ""

@@ -1,13 +1,15 @@
 # Lumberjack
-This bot is designed to be a robust discord logging bot. It can track who joins and leaves your server, deleted and edited messages, and user profile changes.
 
-###Setup
+This bot is designed to be a robust discord logging bot. It can track who joins and leaves your server, deleted and
+edited messages, and user profile changes.
+
+### Setup
 
 To run you need python and discord.py
 
 https://github.com/Rapptz/discord.py
 
-###Server Setup
+### Server Setup
 
 Add your bot token to the empty token file, and you are ready to launch the bot
 
@@ -24,6 +26,7 @@ To disable a log use
 You need server wide manage message permissions to issue commands.
 
 Valid log types are as following.
+
 1. Join: Member Joins
 2. Leave: Member Leaves
 3. Delete: Deleted messages
@@ -34,7 +37,8 @@ Valid log types are as following.
 8. Avatar: User updates their avatar
 9. LJ_Log: Lumberjack Log channel. Currently used only for logging when a Tracker is placed on a member.
 
-####Tracking
+#### Tracking
+
 The bot can repost any messages sent by a tracked user into a specified channel using the following command.
 
 `lum.track (user name/id) (time in D, H, M) (log channel name/id)`
@@ -43,7 +47,7 @@ To remove a tracker use
 
 `lum.untrack (username/id)`
 
-####Permissions Needed
+#### Permissions Needed
 
 1. "send message" and "send embed" permissions in the logging channel.
 2. "read permissions" of any channel you want logged.

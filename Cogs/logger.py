@@ -1,8 +1,8 @@
 import logging
+import typing
 from datetime import datetime
 
 import discord
-import typing
 from discord.ext import commands
 
 from Helpers.database import Database
@@ -11,11 +11,6 @@ from Helpers.helpers import has_permissions, format_datetime, field_message_spli
 
 class Logger(commands.Cog):
     def __init__(self, bot: discord.Client, logs: logging, db: Database):
-        """
-        Cog
-        Handles logging system for Lumberjack
-                :param bot: Discord.py Bot Object
-                """
         self.bot = bot
         self.logs = logs
         self.db = db
@@ -23,8 +18,13 @@ class Logger(commands.Cog):
 
     @commands.command()
     @commands.check_any(has_permissions())
-    async def log(self, ctx, log_type, channel: typing.Union[discord.TextChannel, str]):
-        if isinstance(channel, str) and channel == "here":
+    async def log(
+        self,
+        ctx: commands.context.Context,
+        log_type: str,
+        channel: typing.Union[discord.TextChannel, str],
+    ):
+        if isinstance(channel, str) and channel.lower() == "here":
             channel = ctx.channel
         elif isinstance(channel, str):
             raise commands.BadArgument
