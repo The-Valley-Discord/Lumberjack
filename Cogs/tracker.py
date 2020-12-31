@@ -20,7 +20,11 @@ class Tracker(commands.Cog):
     @commands.command()
     @commands.check_any(has_permissions())
     async def track(
-        self, ctx: Context, user: discord.Member, time: str, channel: discord.TextChannel
+        self,
+        ctx: Context,
+        user: discord.Member,
+        time: str,
+        channel: discord.TextChannel,
     ):
         tracking_time: datetime = datetime.utcnow()
         if time[-1].lower() == "d":
@@ -86,7 +90,9 @@ class Tracker(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         try:
-            tracker: Tracking = self.db.get_tracked_by_id(message.guild.id, message.author.id)
+            tracker: Tracking = self.db.get_tracked_by_id(
+                message.guild.id, message.author.id
+            )
         except ValueError:
             pass
         else:
@@ -161,8 +167,12 @@ class Tracker(commands.Cog):
             await channel.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,
-                                    after: discord.VoiceState):
+    async def on_voice_state_update(
+        self,
+        member: discord.Member,
+        before: discord.VoiceState,
+        after: discord.VoiceState,
+    ):
         try:
             tracker: Tracking = self.db.get_tracked_by_id(member.guild.id, member.id)
         except ValueError:

@@ -30,7 +30,9 @@ class Logger(commands.Cog):
             channel: discord.TextChannel = ctx.channel
         elif isinstance(channel, str):
             raise commands.BadArgument
-        log_name: str = self.db.set_log_channel(log_type.lower(), ctx.guild.id, channel.id)
+        log_name: str = self.db.set_log_channel(
+            log_type.lower(), ctx.guild.id, channel.id
+        )
         await ctx.send(f"Updated {log_name} Log Channel to {channel.mention}")
 
     @log.error
@@ -87,7 +89,9 @@ class Logger(commands.Cog):
                 )
             if author is None:
                 pass
-            elif isinstance(author, discord.Member) and (author.bot and polyphony_role not in author.roles):
+            elif isinstance(author, discord.Member) and (
+                author.bot and polyphony_role not in author.roles
+            ):
                 pass
             else:
                 embed: discord.Embed = discord.Embed(
@@ -100,7 +104,9 @@ class Logger(commands.Cog):
                     color=0xD90000,
                 )
                 if len(msg.clean_content) > 0:
-                    embed: discord.Embed = field_message_splitter(embed, msg.clean_content, "Content")
+                    embed: discord.Embed = field_message_splitter(
+                        embed, msg.clean_content, "Content"
+                    )
                 if len(msg.attachments) == 0:
                     pass
                 else:
@@ -123,7 +129,9 @@ class Logger(commands.Cog):
                     self.logs.error(f"Error sending delete log: {e}")
 
     @commands.Cog.listener()
-    async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent):
+    async def on_raw_bulk_message_delete(
+        self, payload: discord.RawBulkMessageDeleteEvent
+    ):
         messages: typing.List[DBMessage] = []
         message_ids: typing.List[int] = sorted(payload.message_ids)
         for message_id in message_ids:
@@ -201,7 +209,9 @@ class Logger(commands.Cog):
                 payload.data["content"] = ""
             if before.clean_content == payload.data["content"]:
                 pass
-            elif isinstance(author, discord.Member) and (author.bot and polyphony_role not in author.roles):
+            elif isinstance(author, discord.Member) and (
+                author.bot and polyphony_role not in author.roles
+            ):
                 pass
             else:
                 embed = discord.Embed(

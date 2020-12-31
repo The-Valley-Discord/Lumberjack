@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 import discord
 from discord.ext import commands
@@ -11,7 +11,7 @@ def has_permissions():
     return commands.check(predicate)
 
 
-before_invites = {}
+before_invites: Dict[str, discord.Invite] = {}
 format_date = "%b %d, %Y"
 format_time = "%I:%M %p"
 format_datetime = "%b %d, %Y  %I:%M %p"
