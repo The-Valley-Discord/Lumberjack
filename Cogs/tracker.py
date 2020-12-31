@@ -3,10 +3,11 @@ from datetime import datetime, timedelta
 
 import discord
 from discord.ext import commands
+from discord.ext.commands import Context
 
 from Helpers.database import Database
 from Helpers.helpers import message_splitter, has_permissions, field_message_splitter
-from Helpers.models import Tracking
+from Helpers.models import Tracking, DBGuild, DBMessage
 
 
 class Tracker(commands.Cog):
@@ -19,18 +20,15 @@ class Tracker(commands.Cog):
     @commands.command()
     @commands.check_any(has_permissions())
     async def track(
-        self, ctx, user: discord.Member, time, channel: discord.TextChannel
+        self, ctx: Context, user: discord.Member, time: str, channel: discord.TextChannel
     ):
-        tracking_time = 0
+        tracking_time: datetime = datetime.utcnow()
         if time[-1].lower() == "d":
-            time_limit = timedelta(days=int(time[:-1]))
-            tracking_time = datetime.utcnow() + time_limit
+            tracking_time += timedelta(days=int(time[:-1]))
         elif time[-1].lower() == "h":
-            time_limit = timedelta(hours=int(time[:-1]))
-            tracking_time = datetime.utcnow() + time_limit
+            tracking_time += timedelta(hours=int(time[:-1]))
         elif time[-1].lower() == "m":
-            time_limit = timedelta(minutes=int(time[:-1]))
-            tracking_time = datetime.utcnow() + time_limit
+            tracking_time += timedelta(minutes=int(time[:-1]))
         else:
             raise commands.BadArgument
         if user.guild_permissions.manage_guild:
@@ -43,8 +41,8 @@ class Tracker(commands.Cog):
             username = f"{user.name}#{user.discriminator}"
             modname = f"{ctx.author.name}#{ctx.author.discriminator}"
 
-            gld = self.db.get_log_by_id(ctx.guild.id)
-            logs = self.bot.get_channel(gld.lj_id)
+            gld: DBGuild = self.db.get_log_by_id(ctx.guild.id)
+            logs: discord.TextChannel = self.bot.get_channel(gld.lj_id)
             self.db.add_tracker(
                 Tracking(
                     user.id,
@@ -60,7 +58,7 @@ class Tracker(commands.Cog):
             await logs.send(f"{modname} placed a tracker on {user.mention} for {time}")
 
     @track.error
-    async def track_error(self, ctx, error):
+    async def track_error(self, ctx: Context, error: Exception):
         if isinstance(error, commands.BadArgument):
             await ctx.send(
                 "A Valid User or channel was not entered\nFormat is lum.track (user mention/id) (time in d or h) "
@@ -69,26 +67,26 @@ class Tracker(commands.Cog):
 
     @commands.command()
     @commands.check_any(has_permissions())
-    async def untrack(self, ctx, user: discord.Member):
+    async def untrack(self, ctx: Context, user: discord.Member):
         modname = f"{ctx.author.name}#{ctx.author.discriminator}"
         username = f"{user.name}#{user.discriminator}"
         self.db.remove_tracker(ctx.guild.id, user.id)
         await ctx.send(f"{username} is no longer being tracked")
-        gld = self.db.get_log_by_id(ctx.guild.id)
-        logs = self.bot.get_channel(gld.lj_id)
+        gld: DBGuild = self.db.get_log_by_id(ctx.guild.id)
+        logs: discord.TextChannel = self.bot.get_channel(gld.lj_id)
         await logs.send(f"{modname} removed the tracker on {username}")
 
     @untrack.error
-    async def untrack_error(self, ctx, error):
+    async def untrack_error(self, ctx: Context, error: Exception):
         if isinstance(error, commands.BadArgument):
             await ctx.send(
                 f"A Valid User was not entered\nFormat is lum.untrack (user mention/id)"
             )
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         try:
-            tracker = self.db.get_tracked_by_id(message.guild.id, message.author.id)
+            tracker: Tracking = self.db.get_tracked_by_id(message.guild.id, message.author.id)
         except ValueError:
             pass
         else:
@@ -104,8 +102,8 @@ class Tracker(commands.Cog):
                 )
                 embed.set_author(name="Tracker Expired")
                 embed.timestamp = datetime.utcnow()
-                gld = self.db.get_log_by_id(message.channel.guild.id)
-                logs = self.bot.get_channel(gld.lj_id)
+                gld: DBGuild = self.db.get_log_by_id(message.channel.guild.id)
+                logs: discord.TextChannel = self.bot.get_channel(gld.lj_id)
                 await logs.send(embed=embed)
                 await channel.send(embed=embed)
             else:
@@ -137,17 +135,16 @@ class Tracker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
-        channel = self.bot.get_channel(payload.channel_id)
-        before = self.db.get_msg_by_id(payload.message_id)
-        author = self.bot.get_user(before.author.id)
+        before: DBMessage = self.db.get_msg_by_id(payload.message_id)
+        author: discord.User = self.bot.get_user(before.author.id)
         try:
-            tracker = self.db.get_tracked_by_id(channel.guild.id, before.author.id)
+            tracker = self.db.get_tracked_by_id(before.guild.id, before.author.id)
         except ValueError:
             pass
         else:
             if "content" not in payload.data:
                 payload.data["content"] = ""
-            channel = self.bot.get_channel(tracker.channel_id)
+            channel: discord.TextChannel = self.bot.get_channel(tracker.channel_id)
             embed = discord.Embed(
                 description=f"**[Jump Url](https://discordapp.com/channels/"
                 f"{channel.guild.id}/{payload.channel_id}/{payload.message_id})**",
@@ -164,13 +161,14 @@ class Tracker(commands.Cog):
             await channel.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_voice_state_update(self, member, before, after):
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,
+                                    after: discord.VoiceState):
         try:
-            tracker = self.db.get_tracked_by_id(member.guild.id, member.id)
+            tracker: Tracking = self.db.get_tracked_by_id(member.guild.id, member.id)
         except ValueError:
             pass
         else:
-            channel = self.bot.get_channel(tracker.channel_id)
+            channel: discord.TextChannel = self.bot.get_channel(tracker.channel_id)
             if before.channel == after.channel:
                 pass
             elif tracker is None:
@@ -214,13 +212,13 @@ class Tracker(commands.Cog):
                 await channel.send("There was an error on VC log")
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
         try:
-            tracker = self.db.get_tracked_by_id(after.guild.id, after.id)
+            tracker: Tracking = self.db.get_tracked_by_id(after.guild.id, after.id)
         except ValueError:
             pass
         else:
-            channel = self.bot.get_channel(tracker.channel_id)
+            channel: discord.TextChannel = self.bot.get_channel(tracker.channel_id)
             if before.nick == after.nick:
                 pass
             elif channel is None:
@@ -236,40 +234,35 @@ class Tracker(commands.Cog):
                 await channel.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_user_update(self, before, after):
+    async def on_user_update(self, before: discord.User, after: discord.User):
         for guild in self.bot.guilds:
             try:
-                tracker = self.db.get_tracked_by_id(guild.id, after.id)
+                tracker: Tracking = self.db.get_tracked_by_id(guild.id, after.id)
             except ValueError:
                 pass
             else:
+                channel: discord.TextChannel = self.bot.get_channel(tracker.channel_id)
+                if channel is None:
+                    return
                 if (
                     before.name != after.name
                     or before.discriminator != after.discriminator
                 ):
-                    channel = self.bot.get_channel(tracker.channel_id)
-                    if channel is None:
-                        pass
-                    else:
-                        embed = discord.Embed(
-                            description=(
-                                f"**Before:** {before.name}#{before.discriminator}\n"
-                                f"**After:** {after.name}#{after.discriminator}"
-                            ),
-                            color=0x22FFC2,
-                        )
-                        embed.set_author(name=f"{after.name}#{after.discriminator}")
-                        embed.set_footer(text=f"{after.id}")
-                        embed.timestamp = datetime.utcnow()
-                        await channel.send(embed=embed)
+                    embed = discord.Embed(
+                        description=(
+                            f"**Before:** {before.name}#{before.discriminator}\n"
+                            f"**After:** {after.name}#{after.discriminator}"
+                        ),
+                        color=0x22FFC2,
+                    )
+                    embed.set_author(name=f"{after.name}#{after.discriminator}")
+                    embed.set_footer(text=f"{after.id}")
+                    embed.timestamp = datetime.utcnow()
+                    await channel.send(embed=embed)
                 if before.avatar != after.avatar:
-                    channel = self.bot.get_channel(tracker.channel_id)
-                    if channel is None:
-                        pass
-                    else:
-                        embed = discord.Embed(description=f"New avatar", color=0x8000FF)
-                        embed.set_author(name=f"{after.name}#{after.discriminator}")
-                        embed.set_footer(text=f"{after.id}")
-                        embed.set_thumbnail(url=after.avatar_url)
-                        embed.timestamp = datetime.utcnow()
-                        await channel.send(embed=embed)
+                    embed = discord.Embed(description=f"New avatar", color=0x8000FF)
+                    embed.set_author(name=f"{after.name}#{after.discriminator}")
+                    embed.set_footer(text=f"{after.id}")
+                    embed.set_thumbnail(url=after.avatar_url)
+                    embed.timestamp = datetime.utcnow()
+                    await channel.send(embed=embed)

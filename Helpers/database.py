@@ -22,9 +22,7 @@ class Database:
 
     def add_message(self, message: discord.Message):
         attachments = [f"{attachment.proxy_url}" for attachment in message.attachments]
-        attachment_bool = False
-        if len(attachments) > 0:
-            attachment_bool = True
+        attachment_bool = len(attachments) > 0
         if attachment_bool:
             self.add_attachment(message.id, attachments)
         values = (
@@ -70,7 +68,7 @@ class Database:
             attachments,
         )
 
-    def update_msg(self, message_id, content):
+    def update_msg(self, message_id: int, content: str):
         self.conn.execute(
             """UPDATE messages SET clean_content = :clean_content
                     WHERE id = :id""",
@@ -83,7 +81,7 @@ class Database:
             "SELECT * FROM attachment_urls WHERE message_id=:id", {"id": message_id}
         ).fetchall()
 
-    def add_attachment(self, message_id, attachments):
+    def add_attachment(self, message_id: int, attachments: List[str]):
         for attachment in attachments:
             try:
                 self.conn.execute(
@@ -301,7 +299,7 @@ class Database:
                 f"Failed to add following lumberjack message into database: {message}"
             )
 
-    def get_old_lumberjack_messages(self):
+    def get_old_lumberjack_messages(self) -> List[LJMessage]:
         old_date = datetime.utcnow() - timedelta(days=31)
         messages = self.conn.execute(
             "SELECT * FROM lumberjack_messages WHERE DATETIME(created_at) < :timestamp",
@@ -322,7 +320,7 @@ class Database:
 
         return lj_messages
 
-    def delete_lumberjack_messages_from_db(self, message_id):
+    def delete_lumberjack_messages_from_db(self, message_id: int):
         try:
             self.conn.execute(
                 "DELETE FROM lumberjack_messages WHERE message_id=:message_id",

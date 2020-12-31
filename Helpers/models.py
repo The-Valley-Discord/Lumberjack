@@ -42,7 +42,7 @@ class DBAuthor(object):
 
 
 class DBChannel(object):
-    def __init__(self, channel_id, channel_name):
+    def __init__(self, channel_id: int, channel_name: int):
         self.id = channel_id
         self.name = channel_name
 
@@ -56,7 +56,7 @@ class DBMessage:
         guild: DBGuild,
         clean_content: str,
         created_at: datetime,
-        attachments: List,
+        attachments: List[str],
     ):
         self.id = message_id
         self.author = author

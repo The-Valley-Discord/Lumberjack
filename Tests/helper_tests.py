@@ -4,7 +4,6 @@ import unittest
 from datetime import datetime
 
 import aiounittest
-import discord
 from mock import AsyncMock, Mock
 
 from Helpers.helpers import *

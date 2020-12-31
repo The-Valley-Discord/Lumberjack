@@ -22,6 +22,11 @@ def add_invite(invite: discord.Invite):
 
 
 def get_invite(invite_id: str) -> discord.Invite:
+    """
+
+    :param invite_id: the invites id as a string
+    :return: the invite that matches the id provided.
+    """
     try:
         return before_invites[invite_id]
     except KeyError:
@@ -55,7 +60,7 @@ async def remove_all_guild_invites(guild: discord.Guild):
         remove_invite(invite)
 
 
-def message_splitter(content: str, cap: int) -> List:
+def message_splitter(content: str, cap: int) -> List[str]:
     if len(content) == 0:
         raise ValueError("Message has no contents")
     elif len(content) <= cap:

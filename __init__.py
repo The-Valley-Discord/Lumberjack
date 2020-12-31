@@ -1,9 +1,11 @@
 import logging
 import sqlite3
 from datetime import datetime
+from typing import List
 
 import discord
 from discord.ext import commands
+from discord.ext.commands.context import Context
 
 from Cogs.logger import Logger
 from Cogs.member_log import MemberLog
@@ -16,6 +18,7 @@ from Helpers.helpers import (
     add_all_guild_invites,
     remove_all_guild_invites,
 )
+from Helpers.models import LJMessage
 
 logs = logging.getLogger("Lumberjack")
 logs.setLevel(logging.DEBUG)
@@ -38,7 +41,7 @@ bot = commands.Bot(
 
 if __name__ == "__main__":
     with open("schema.sql", "r") as schema_file:
-        db = Database(sqlite3.connect("log.db"), logs, schema_file)
+        db: Database = Database(sqlite3.connect("log.db"), logs, schema_file)
     bot.add_cog(MemberLog(bot, logs, db))
     bot.add_cog(Tracker(bot, logs, db))
     bot.add_cog(Logger(bot, logs, db))
@@ -53,34 +56,34 @@ async def on_ready():
 
 
 @bot.event
-async def on_guild_join(guild):
+async def on_guild_join(guild: discord.Guild):
     await add_all_guild_invites(guild)
     db.add_guild(guild)
 
 
 @bot.event
-async def on_guild_remove(guild):
+async def on_guild_remove(guild: discord.Guild):
     await remove_all_guild_invites(guild)
 
 
 @bot.event
-async def on_invite_create(invite):
+async def on_invite_create(invite: discord.Invite):
     add_invite(invite)
 
 
 @bot.event
-async def on_invite_delete(invite):
+async def on_invite_delete(invite: discord.Invite):
     remove_invite(invite)
 
 
 @bot.event
-async def on_message_delete(message):
+async def on_message_delete(message: discord.Message):
     db.delete_old_db_messages()
-    db_messages = db.get_old_lumberjack_messages()
+    db_messages: List[LJMessage] = db.get_old_lumberjack_messages()
     for message_id in db_messages:
         channel = bot.get_channel(message_id[1])
         try:
-            lum_message = await channel.fetch_message(message_id[0])
+            lum_message: discord.Message = await channel.fetch_message(message_id[0])
             await lum_message.delete()
         except discord.NotFound:
             pass
@@ -88,8 +91,8 @@ async def on_message_delete(message):
 
 
 @bot.command()
-async def ping(ctx):
-    embed = discord.Embed(
+async def ping(ctx: Context):
+    embed: discord.Embed = discord.Embed(
         title="**Ping**", description=f"Pong! {round(bot.latency * 1000)}ms"
     )
     embed.set_author(name=f"{bot.user.name}", icon_url=bot.user.avatar_url)
@@ -100,7 +103,7 @@ bot.remove_command("help")
 
 
 @bot.command(aliases=["help"])
-async def _help(ctx):
+async def _help(ctx: Context):
     await ctx.send(
         "`lum.ping` to check bot responsiveness\n"
         '`lum.log <log type> <"here" or channel mention/id>` will change what channel a log appears in\n'
