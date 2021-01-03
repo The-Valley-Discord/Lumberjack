@@ -86,6 +86,8 @@ class Logger(commands.Cog):
             self.logs.debug(f"on_raw_message_delete: {payload.message_id} {e}")
         else:
             author: discord.User = channel.guild.get_member(msg.author.id)
+            if author is None:
+                author = self.bot.get_user(msg.author.id)
             polyphony_role: typing.Union[int, discord.Role] = 0
             if msg.guild.id == 539925898128785460:
                 polyphony_role = self.bot.get_guild(539925898128785460).get_role(
