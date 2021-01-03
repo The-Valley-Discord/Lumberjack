@@ -65,8 +65,12 @@ class Tracker(commands.Cog):
     async def track_error(self, ctx: Context, error: Exception):
         if isinstance(error, commands.BadArgument):
             await ctx.send(
-                "A Valid User or channel was not entered\nFormat is lum.track (user mention/id) (time in d or h) "
+                "A Valid User or channel was not entered\nFormat is `lum.track (user mention/id) (time in d or h)` "
                 "(log channel mention/id)"
+            )
+        elif not isinstance(error, commands.CheckAnyFailure):
+            await ctx.send(
+                "Format is `lum.track (user mention/id) (time in d or h) (log channel mention/id)`"
             )
 
     @commands.command()
@@ -84,8 +88,10 @@ class Tracker(commands.Cog):
     async def untrack_error(self, ctx: Context, error: Exception):
         if isinstance(error, commands.BadArgument):
             await ctx.send(
-                f"A Valid User was not entered\nFormat is lum.untrack (user mention/id)"
+                "A Valid User was not entered\nFormat is `lum.untrack (user mention/id)`"
             )
+        elif not isinstance(error, commands.CheckAnyFailure):
+            await ctx.send("Format is `lum.untrack (user mention/id)`")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -141,13 +147,16 @@ class Tracker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
-        before: DBMessage = self.db.get_msg_by_id(payload.message_id)
-        author: discord.User = self.bot.get_user(before.author.id)
+        try:
+            before: DBMessage = self.db.get_msg_by_id(payload.message_id)
+        except ValueError:
+            return
         try:
             tracker = self.db.get_tracked_by_id(before.guild.id, before.author.id)
         except ValueError:
             pass
         else:
+            author: discord.User = self.bot.get_user(before.author.id)
             if "content" not in payload.data:
                 payload.data["content"] = ""
             channel: discord.TextChannel = self.bot.get_channel(tracker.channel_id)

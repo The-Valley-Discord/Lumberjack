@@ -58,15 +58,7 @@ class Database:
         channel = DBChannel(msg[4], msg[5])
         guild = self.get_log_by_id(msg[6])
         attachments = self.get_att_by_id(msg[0])
-        return DBMessage(
-            msg[0],
-            author,
-            channel,
-            guild,
-            msg[7],
-            datetime.strptime(msg[8], "%Y-%m-%d %H:%M:%S.%f"),
-            attachments,
-        )
+        return DBMessage(msg[0], author, channel, guild, msg[7], attachments,)
 
     def update_msg(self, message_id: int, content: str):
         self.conn.execute(
@@ -77,9 +69,13 @@ class Database:
         self.conn.commit()
 
     def get_att_by_id(self, message_id: int) -> List:
-        return self.conn.execute(
+        attachments_tuple: List[tuple] = self.conn.execute(
             "SELECT * FROM attachment_urls WHERE message_id=:id", {"id": message_id}
         ).fetchall()
+        attachments: List[str] = []
+        for attachment in attachments_tuple:
+            attachments.append(attachment[1])
+        return attachments
 
     def add_attachment(self, message_id: int, attachments: List[str]):
         for attachment in attachments:

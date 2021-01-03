@@ -46,6 +46,8 @@ class Logger(commands.Cog):
             await ctx.send(
                 "Please enter a valid channel or 'here' to set it to this channel"
             )
+        elif not isinstance(error, commands.CheckAnyFailure):
+            await ctx.send("Format is `lum.log <log type> <channel name/id or 'here'>`")
 
     @commands.command()
     @commands.check_any(has_permissions())
@@ -60,6 +62,8 @@ class Logger(commands.Cog):
                 "Incorrect log type. Please use one of the following. Join, Leave, "
                 "Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, Stats or LJLog"
             )
+        elif not isinstance(error, commands.CheckAnyFailure):
+            await ctx.send("Format is `lum.clear <log type>")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -185,8 +189,12 @@ class Logger(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         try:
-            channel = self.bot.get_channel(payload.channel_id)
             before = self.db.get_msg_by_id(payload.message_id)
+        except ValueError as e:
+            self.logs.debug(f"on_raw_message_edit: {payload.message_id} {e} ")
+            return
+        try:
+            channel = self.bot.get_channel(payload.channel_id)
             logs = self.bot.get_channel(before.guild.edit)
         except discord.HTTPException or ValueError as e:
             self.logs.error(f"Error in on_raw_message_edit because: {e}")

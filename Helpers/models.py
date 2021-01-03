@@ -55,7 +55,6 @@ class DBMessage:
         channel: DBChannel,
         guild: DBGuild,
         clean_content: str,
-        created_at: datetime,
         attachments: List[str],
     ):
         self.id = message_id
@@ -63,7 +62,6 @@ class DBMessage:
         self.channel = channel
         self.guild = guild
         self.clean_content = clean_content
-        self.created_at = created_at
         self.attachments = attachments
 
 

@@ -32,7 +32,7 @@ intents = discord.Intents.default()
 intents.members = True
 
 bot = commands.Bot(
-    command_prefix="bum.",
+    command_prefix="lum.",
     intents=intents,
     activity=discord.Activity(
         type=discord.ActivityType.watching, name="with ten thousand eyes."
@@ -80,14 +80,16 @@ async def on_invite_delete(invite: discord.Invite):
 async def on_message_delete(message: discord.Message):
     db.delete_old_db_messages()
     db_messages: List[LJMessage] = db.get_old_lumberjack_messages()
-    for message_id in db_messages:
-        channel = bot.get_channel(message_id[1])
+    for lj_message in db_messages:
+        channel = bot.get_channel(lj_message.channel_id)
         try:
-            lum_message: discord.Message = await channel.fetch_message(message_id[0])
+            lum_message: discord.Message = await channel.fetch_message(
+                lj_message.message_id
+            )
             await lum_message.delete()
         except discord.NotFound:
             pass
-        db.delete_lumberjack_messages_from_db(message_id[0])
+        db.delete_lumberjack_messages_from_db(lj_message.message_id)
 
 
 @bot.command()
