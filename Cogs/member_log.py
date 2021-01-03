@@ -1,27 +1,33 @@
+import logging
 from datetime import datetime
 
 import discord
 from discord.ext import commands
 
-from database import get_log_by_id, add_lumberjack_message
-from helpers import return_time_delta_string, get_invite, update_invite, format_date
+from Helpers.database import Database
+from Helpers.helpers import get_invite, update_invite, format_date
+from Helpers.models import BetterDateTime, DBGuild
 
 
 class MemberLog(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: discord.Client, logs: logging, db: Database):
+        self.bot: discord.Client = bot
+        self.logs: logging = logs
+        self.db: Database = db
         self._last_member = None
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
-        gld = get_log_by_id(member.guild.id)
-        logs = self.bot.get_channel(gld[1])
-        account_age = datetime.utcnow() - member.created_at
+    async def on_member_join(self, member: discord.Member):
+        gld: DBGuild = self.db.get_log_by_id(member.guild.id)
+        logs: discord.TextChannel = self.bot.get_channel(gld.join_id)
+        account_age = BetterDateTime.utcnow() - BetterDateTime.from_datetime(
+            member.created_at
+        )
         invite_used = "Vanity URL"
         invite_uses = ""
         inviter = ""
         for invite in await member.guild.invites():
-            before_invite = get_invite(invite.id)
+            before_invite: discord.Invite = get_invite(invite.id)
             if before_invite.uses != invite.uses:
                 invite_used = invite.url
                 invite_uses = f"({invite.uses} uses)"
@@ -45,11 +51,10 @@ class MemberLog(commands.Cog):
                 ),
                 color=color,
             )
-            new_account_string = return_time_delta_string(account_age)
-            if len(new_account_string) > 0:
+            if account_age.days < 7:
                 embed.add_field(
                     name="**New Account**",
-                    value=f"Created {new_account_string}ago",
+                    value=f"Created {account_age}ago",
                     inline=False,
                 )
             embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})")
@@ -57,17 +62,11 @@ class MemberLog(commands.Cog):
             embed.set_footer(text=f"Total Members: {member.guild.member_count}")
             embed.timestamp = datetime.utcnow()
             await logs.send(embed=embed)
-            # broken membercount tracker
-            # stat_channel = self.bot.get_channel(gld[9])
-            # if stat_channel is None:
-            #    pass
-            # else:
-            #    await stat_channel.edit(name=f"Members: {member.guild.member_count}")
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member):
-        gld = get_log_by_id(member.guild.id)
-        logs = self.bot.get_channel(gld[2])
+    async def on_member_remove(self, member: discord.Member):
+        gld: DBGuild = self.db.get_log_by_id(member.guild.id)
+        logs: discord.TextChannel = self.bot.get_channel(gld.leave_id)
         if logs is None:
             pass
         else:
@@ -98,17 +97,11 @@ class MemberLog(commands.Cog):
                     name=f"**Roles[{len(roles)}]**", value=f"{roles_str}", inline=False
                 )
             await logs.send(embed=embed)
-            # broken membercount tracker
-            # stat_channel = self.bot.get_channel(gld[9])
-            # if stat_channel is None:
-            #    pass
-            # else:
-            #   await stat_channel.edit(name=f"Members: {member.guild.member_count}")
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
-        gld = get_log_by_id(after.guild.id)
-        logs = self.bot.get_channel(gld[7])
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        gld: DBGuild = self.db.get_log_by_id(after.guild.id)
+        logs: discord.TextChannel = self.bot.get_channel(gld.nickname)
         if before.nick == after.nick:
             pass
         elif logs is None:
@@ -127,19 +120,18 @@ class MemberLog(commands.Cog):
             embed.set_thumbnail(url=after.avatar_url)
             embed.set_footer(text=f"")
             embed.timestamp = datetime.utcnow()
-            message = await logs.send(embed=embed)
-            add_lumberjack_message(message)
+            self.db.add_lumberjack_message(await logs.send(embed=embed))
 
     @commands.Cog.listener()
-    async def on_user_update(self, before, after):
+    async def on_user_update(self, before: discord.User, after: discord.User):
         for guild in self.bot.guilds:
             if after in guild.members:
-                gld = get_log_by_id(guild.id)
+                gld: DBGuild = self.db.get_log_by_id(guild.id)
                 if (
                     before.name != after.name
                     or before.discriminator != after.discriminator
                 ):
-                    logs = self.bot.get_channel(gld[6])
+                    logs: discord.TextChannel = self.bot.get_channel(gld.username)
                     if logs is None:
                         pass
                     else:
@@ -158,10 +150,9 @@ class MemberLog(commands.Cog):
                         embed.set_thumbnail(url=after.avatar_url)
                         embed.set_footer(text=f"")
                         embed.timestamp = datetime.utcnow()
-                        message = await logs.send(embed=embed)
-                        add_lumberjack_message(message)
+                        self.db.add_lumberjack_message(await logs.send(embed=embed))
                 if before.avatar != after.avatar:
-                    logs = self.bot.get_channel(gld[8])
+                    logs: discord.TextChannel = self.bot.get_channel(gld.avatar)
                     if logs is None:
                         pass
                     else:
@@ -178,7 +169,6 @@ class MemberLog(commands.Cog):
                         )
                         embed.set_thumbnail(url=before.avatar_url)
                         embed.set_footer(text=f"")
-                        embed.set_image(url=after.avatar_url_as(size=128))
+                        embed.set_image(url=str(after.avatar_url_as(size=128)))
                         embed.timestamp = datetime.utcnow()
-                        message = await logs.send(embed=embed)
-                        add_lumberjack_message(message)
+                        self.db.add_lumberjack_message(await logs.send(embed=embed))

@@ -1,37 +1,56 @@
 # Lumberjack
-Discord Logging bot
+
+This bot is designed to be a robust discord logging bot. It can track who joins and leaves your server, deleted and
+edited messages, and user profile changes.
+
+### Setup
+
 To run you need python and discord.py
 
 https://github.com/Rapptz/discord.py
 
-Add your bot token to the empty token file and you are ready to launch the bot
+### Server Setup
+
+Add your bot token to the empty token file, and you are ready to launch the bot
 
 once launched to change the logging channels use
 
-lum.log (log type) (here or Channel ID/mention)
+`lum.log (log type) (here or Channel ID/mention)`
 
 here indicates to make the channel the command is issued in the log channel.
 
 To disable a log use
 
-lum.clear (log type) 
+`lum.clear (log type) `
 
-You need manage server permissions to issue commands.
+You need server wide manage message permissions to issue commands.
 
 Valid log types are as following.
-Join, Leave, Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, or Stats
 
-Stats is used a a membercounter. It updates the selected channel's name with the current number of members on the server.
+1. Join: Member Joins
+2. Leave: Member Leaves
+3. Delete: Deleted messages
+4. Bulk_Delete: Messages that were deleted in bulk. (Think like dyno's ?purge command)
+5. Edit: Messages that have been edited and their previous contents.
+6. Username: User updates their username
+7. Nickname: User updates their server nickname
+8. Avatar: User updates their avatar
+9. LJ_Log: Lumberjack Log channel. Currently used only for logging when a Tracker is placed on a member.
 
-to track a specific users messages use 
+#### Tracking
 
-lum.track (user mention/id) (time in D, H, M) (log channel mention/id)
+The bot can repost any messages sent by a tracked user into a specified channel using the following command.
 
-The bot will need send message and send embed permissions in the logging channel.
+`lum.track (user name/id) (time in D, H, M) (log channel name/id)`
 
-The bot will need read permissions of any channel you want logged.
+To remove a tracker use
 
-The bot will need manage guild and manage channels to track which invite was used on join.
+`lum.untrack (username/id)`
 
-the bot will need manage channels for the member stats tracker.
+#### Permissions Needed
+
+1. "send message" and "send embed" permissions in the logging channel.
+2. "read permissions" of any channel you want logged.
+3. "manage guild" and "manage channels" to track which invite was used when a new member joins.
+
 

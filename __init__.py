@@ -1,93 +1,100 @@
+import logging
+import sqlite3
+from datetime import datetime
+from typing import List
+
 import discord
 from discord.ext import commands
+from discord.ext.commands.context import Context
 
-from database import (
-    get_log_by_id,
-    add_guild,
-    init_db,
-    delete_old_db_messages,
-    get_old_lumberjack_messages,
-    delete_lumberjack_messages_from_db,
+from Cogs.logger import Logger
+from Cogs.member_log import MemberLog
+from Cogs.tracker import Tracker
+from Helpers.database import Database
+from Helpers.helpers import (
+    add_invite,
+    remove_invite,
+    add_all_invites,
+    add_all_guild_invites,
+    remove_all_guild_invites,
 )
-from helpers import add_invite, remove_invite
-from logger import Logger
-from member_log import MemberLog
-from tracker import Tracker
+from Helpers.models import LJMessage
+
+logs = logging.getLogger("Lumberjack")
+logs.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename="Logs/lj.log", encoding="utf-8", mode="a+")
+handler.setFormatter(
+    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
+)
+logs.addHandler(handler)
 
 intents = discord.Intents.default()
 intents.members = True
 
-bot = commands.Bot(command_prefix="lum.", intents=intents)
-bot.add_cog(MemberLog(bot))
-bot.add_cog(Tracker(bot))
-bot.add_cog(Logger(bot))
+bot = commands.Bot(
+    command_prefix="lum.",
+    intents=intents,
+    activity=discord.Activity(
+        type=discord.ActivityType.watching, name="with ten thousand eyes."
+    ),
+)
+
+if __name__ == "__main__":
+    with open("schema.sql", "r") as schema_file:
+        db: Database = Database(sqlite3.connect("log.db"), logs, schema_file)
+    bot.add_cog(MemberLog(bot, logs, db))
+    bot.add_cog(Tracker(bot, logs, db))
+    bot.add_cog(Logger(bot, logs, db))
+    db.add_all_guilds(bot)
+    logs.info(f"Bot was started at: {datetime.utcnow()}")
 
 
 @bot.event
 async def on_ready():
-    init_db()
-    await bot.change_presence(
-        activity=discord.Activity(
-            type=discord.ActivityType.watching, name="with ten thousand eyes."
-        )
-    )
-    for guild in bot.guilds:
-        gld = get_log_by_id(guild.id)
-        if gld is None:
-            new_guild = (guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-            add_guild(new_guild)
-        else:
-            pass
-        for invite in await guild.invites():
-            add_invite(invite)
     print("Bot is ready.")
+    await add_all_invites(bot)
 
 
 @bot.event
-async def on_guild_join(guild):
-    for invite in await guild.invites():
-        add_invite(invite)
-        gld = get_log_by_id(guild.id)
-        if gld is None:
-            new_guild = (guild.id, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-            add_guild(new_guild)
-        else:
-            pass
+async def on_guild_join(guild: discord.Guild):
+    await add_all_guild_invites(guild)
+    db.add_guild(guild)
 
 
 @bot.event
-async def on_guild_remove(guild):
-    for invite in await guild.invites():
-        remove_invite(invite)
+async def on_guild_remove(guild: discord.Guild):
+    await remove_all_guild_invites(guild)
 
 
 @bot.event
-async def on_invite_create(invite):
+async def on_invite_create(invite: discord.Invite):
     add_invite(invite)
 
 
 @bot.event
-async def on_invite_delete(invite):
+async def on_invite_delete(invite: discord.Invite):
     remove_invite(invite)
 
 
 @bot.event
-async def on_message_delete(message):
-    delete_old_db_messages()
-    db_messages = get_old_lumberjack_messages()
-    for message_id in db_messages:
-        channel = bot.get_channel(message_id[1])
+async def on_message_delete(message: discord.Message):
+    db.delete_old_db_messages()
+    db_messages: List[LJMessage] = db.get_old_lumberjack_messages()
+    for lj_message in db_messages:
+        channel = bot.get_channel(lj_message.channel_id)
         try:
-            lum_message = await channel.fetch_message(message_id[0])
+            lum_message: discord.Message = await channel.fetch_message(
+                lj_message.message_id
+            )
             await lum_message.delete()
         except discord.NotFound:
             pass
-        delete_lumberjack_messages_from_db(message_id[0])
+        db.delete_lumberjack_messages_from_db(lj_message.message_id)
 
 
 @bot.command()
-async def ping(ctx):
-    embed = discord.Embed(
+async def ping(ctx: Context):
+    embed: discord.Embed = discord.Embed(
         title="**Ping**", description=f"Pong! {round(bot.latency * 1000)}ms"
     )
     embed.set_author(name=f"{bot.user.name}", icon_url=bot.user.avatar_url)
@@ -98,7 +105,7 @@ bot.remove_command("help")
 
 
 @bot.command(aliases=["help"])
-async def _help(ctx):
+async def _help(ctx: Context):
     await ctx.send(
         "`lum.ping` to check bot responsiveness\n"
         '`lum.log <log type> <"here" or channel mention/id>` will change what channel a log appears in\n'
