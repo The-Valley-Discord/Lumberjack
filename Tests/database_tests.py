@@ -55,7 +55,7 @@ class TestDatabaseMessageMethods(unittest.TestCase):
 
         self.assertIsInstance(retrieved_message, DBMessage)
         self.assertEqual(self.message.clean_content, retrieved_message.clean_content)
-        self.assertEqual(self.attachment.proxy_url, retrieved_message.attachments[0][1])
+        self.assertEqual(self.attachment.proxy_url, retrieved_message.attachments[0])
 
     def test_get_message_retrieves_guild_settings(self):
         retrieved_message = self.db.get_msg_by_id(1)
