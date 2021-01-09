@@ -17,6 +17,7 @@ from Helpers.helpers import (
     add_all_invites,
     add_all_guild_invites,
     remove_all_guild_invites,
+    get_invite,
 )
 from Helpers.models import LJMessage
 
@@ -73,6 +74,17 @@ async def on_invite_create(invite: discord.Invite):
 
 @bot.event
 async def on_invite_delete(invite: discord.Invite):
+    invite: discord.Invite = get_invite(invite.id)
+    if invite.uses + 1 == invite.max_uses:
+        gd = db.get_log_by_id(invite.guild.id)
+        log = bot.get_channel(gd.join_id)
+        embed = discord.Embed(
+            description=f"Invite Id: {invite.id}\n" f"Created By: {invite.inviter}",
+            color=0x009DFF,
+        )
+        embed.set_author(name="Invite Deleted", icon_url=bot.user.avatar_url)
+        embed.timestamp = datetime.utcnow()
+        db.add_lumberjack_message(await log.send(embed=embed))
     remove_invite(invite)
 
 
