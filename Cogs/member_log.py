@@ -23,7 +23,7 @@ class MemberLog(commands.Cog):
         account_age = BetterDateTime.utcnow() - BetterDateTime.from_datetime(
             member.created_at
         )
-        invite_used = "Vanity URL"
+        invite_used = "Unknown Invite"
         invite_uses = ""
         inviter = ""
         for invite in await member.guild.invites():
