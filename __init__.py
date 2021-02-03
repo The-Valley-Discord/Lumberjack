@@ -33,7 +33,7 @@ intents = discord.Intents.default()
 intents.members = True
 
 bot = commands.Bot(
-    command_prefix="lum.",
+    command_prefix="bum.",
     intents=intents,
     activity=discord.Activity(
         type=discord.ActivityType.watching, name="with ten thousand eyes."
