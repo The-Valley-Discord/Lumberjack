@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 
 import discord
+import typing
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -24,8 +25,10 @@ class Tracker(commands.Cog):
         ctx: Context,
         user: discord.Member,
         time: str,
-        channel: discord.TextChannel,
+        channel: typing.Union[discord.TextChannel, str] = "here"
     ):
+        if channel.lower() == "here":
+            channel = ctx.channel
         tracking_time: datetime = datetime.utcnow()
         if time[-1].lower() == "d":
             tracking_time += timedelta(days=int(time[:-1]))
@@ -65,12 +68,12 @@ class Tracker(commands.Cog):
     async def track_error(self, ctx: Context, error: Exception):
         if isinstance(error, commands.BadArgument):
             await ctx.send(
-                "A Valid User or channel was not entered\nFormat is `lum.track (user mention/id) (time in d or h)` "
-                "(log channel mention/id)"
+                "A Valid User or channel was not entered\nFormat is `lum.track (user mention/id) (time in d h or m)` "
+                "(<optional> log channel mention/id)"
             )
         elif not isinstance(error, commands.CheckAnyFailure):
             await ctx.send(
-                "Format is `lum.track (user mention/id) (time in d or h) (log channel mention/id)`"
+                "Format is `lum.track (user mention/id) (time in d h or m) (<optional> log channel mention/id)`"
             )
 
     @commands.command()
