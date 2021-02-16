@@ -169,7 +169,7 @@ class Logger(commands.Cog):
                     color=0xFF0080,
                 )
                 embed.timestamp = datetime.utcnow()
-                with open("../log.txt", "w", encoding="utf-8") as file:
+                with open("./log.txt", "w", encoding="utf-8") as file:
                     for message in messages:
                         file.writelines(
                             f"Author: {message.author.name} ({message.author.id})\nID:{message.id}\n"
@@ -242,8 +242,9 @@ class Logger(commands.Cog):
                 embed = field_message_splitter(embed, payload.data["content"], "After")
                 embed.set_thumbnail(url=author.avatar_url)
                 embed.timestamp = datetime.utcnow()
-                try:
-                    self.db.add_lumberjack_message(await logs.send(embed=embed))
-                except discord.HTTPException as e:
-                    self.logs.error(f"Error sending edit log: {e}")
+                if logs:
+                    try:
+                        self.db.add_lumberjack_message(await logs.send(embed=embed))
+                    except discord.HTTPException as e:
+                        self.logs.error(f"Error sending edit log: {e}")
                 self.db.update_msg(payload.message_id, payload.data["content"])

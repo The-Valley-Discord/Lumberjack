@@ -225,7 +225,7 @@ class Database:
                 tracked[1],
                 tracked[2],
                 tracked[3],
-                datetime.strptime(tracked[4], "%Y-%m-%d %H:%M:%S.%f"),
+                tracked[4],
                 tracked[5],
                 tracked[6],
             )
@@ -308,7 +308,7 @@ class Database:
                     LJMessage(
                         message[0],
                         message[1],
-                        datetime.strptime(message[2], "%Y-%m-%d " "%H:%M:%S.%f"),
+                        message[2],
                     )
                 )
             except TypeError:

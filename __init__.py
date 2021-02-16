@@ -42,7 +42,9 @@ bot = commands.Bot(
 
 if __name__ == "__main__":
     with open("schema.sql", "r") as schema_file:
-        db: Database = Database(sqlite3.connect("log.db"), logs, schema_file)
+        db: Database = Database(sqlite3.connect("log.db",
+                                                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,),
+                                logs, schema_file)
     bot.add_cog(MemberLog(bot, logs, db))
     bot.add_cog(Tracker(bot, logs, db))
     bot.add_cog(Logger(bot, logs, db))
@@ -94,13 +96,14 @@ async def on_message_delete(message: discord.Message):
     db_messages: List[LJMessage] = db.get_old_lumberjack_messages()
     for lj_message in db_messages:
         channel = bot.get_channel(lj_message.channel_id)
-        try:
-            lum_message: discord.Message = await channel.fetch_message(
-                lj_message.message_id
-            )
-            await lum_message.delete()
-        except discord.NotFound:
-            pass
+        if channel:
+            try:
+                lum_message: discord.Message = await channel.fetch_message(
+                    lj_message.message_id
+                )
+                await lum_message.delete()
+            except discord.NotFound:
+                pass
         db.delete_lumberjack_messages_from_db(lj_message.message_id)
 
 
