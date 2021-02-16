@@ -139,7 +139,9 @@ class TestTracking(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         with open("../schema.sql", "r") as schema_file:
-            cls.db = Database(sqlite3.connect(":memory:"), logs, schema_file)
+            cls.db = Database(sqlite3.connect(":memory:",
+                                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,),
+                              logs, schema_file)
 
     def test_add_tracker(self):
         tracker = Tracking(1, "Test_user", 2, 3, datetime.utcnow(), 4, "Test_Mod")
@@ -168,7 +170,9 @@ class TestLumberjackMessageStorage(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         with open("../schema.sql", "r") as schema_file:
-            cls.db = Database(sqlite3.connect(":memory:"), logs, schema_file)
+            cls.db = Database(sqlite3.connect(":memory:",
+                                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,),
+                              logs, schema_file)
 
     def test_add_lumberjack_message(self):
         message = Mock(discord.Message)
