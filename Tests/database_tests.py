@@ -139,9 +139,14 @@ class TestTracking(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         with open("../schema.sql", "r") as schema_file:
-            cls.db = Database(sqlite3.connect(":memory:",
-                                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,),
-                              logs, schema_file)
+            cls.db = Database(
+                sqlite3.connect(
+                    ":memory:",
+                    detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+                ),
+                logs,
+                schema_file,
+            )
 
     def test_add_tracker(self):
         tracker = Tracking(1, "Test_user", 2, 3, datetime.utcnow(), 4, "Test_Mod")
@@ -170,9 +175,14 @@ class TestLumberjackMessageStorage(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         with open("../schema.sql", "r") as schema_file:
-            cls.db = Database(sqlite3.connect(":memory:",
-                                              detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,),
-                              logs, schema_file)
+            cls.db = Database(
+                sqlite3.connect(
+                    ":memory:",
+                    detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+                ),
+                logs,
+                schema_file,
+            )
 
     def test_add_lumberjack_message(self):
         message = Mock(discord.Message)
@@ -181,10 +191,10 @@ class TestLumberjackMessageStorage(unittest.TestCase):
         message.channel.id = 6
         message.created_at = datetime.utcnow() - timedelta(days=36)
         self.db.add_lumberjack_message(message)
-        retrieved_messages = self.db.get_old_lumberjack_messages()
-        self.assertEqual(5, retrieved_messages[0].message_id)
-        self.assertEqual(6, retrieved_messages[0].channel_id)
-        self.assertEqual(message.created_at, retrieved_messages[0].created_at)
+        retrieved_message = self.db.get_oldest_lumberjack_message()
+        self.assertEqual(5, retrieved_message.message_id)
+        self.assertEqual(6, retrieved_message.channel_id)
+        self.assertEqual(message.created_at, retrieved_message.created_at)
 
     def test_delete_lumberjack_messages_from_db(self):
         message = Mock(discord.Message)
@@ -195,5 +205,5 @@ class TestLumberjackMessageStorage(unittest.TestCase):
         self.db.add_lumberjack_message(message)
         self.db.delete_lumberjack_messages_from_db(6)
         self.db.delete_lumberjack_messages_from_db(5)
-        messages = self.db.get_old_lumberjack_messages()
-        self.assertTrue(len(messages) == 0)
+        message = self.db.get_oldest_lumberjack_message()
+        self.assertTrue(message is None)

@@ -295,26 +295,35 @@ class Database:
                 f"Failed to add following lumberjack message into database: {message}"
             )
 
-    def get_old_lumberjack_messages(self) -> List[LJMessage]:
+    def get_oldest_lumberjack_message(self) -> LJMessage:
         old_date = datetime.utcnow() - timedelta(days=31)
-        messages = self.conn.execute(
-            "SELECT * FROM lumberjack_messages WHERE DATETIME(created_at) < :timestamp",
-            {"timestamp": old_date},
-        ).fetchall()
-        lj_messages = []
-        for message in messages:
-            try:
-                lj_messages.append(
-                    LJMessage(
-                        message[0],
-                        message[1],
-                        message[2],
-                    )
-                )
-            except TypeError:
-                self.logs.error("No old LJ Messages in database")
+        message = None
+        try:
+            message = self.conn.execute(
+                "SELECT * FROM lumberjack_messages WHERE DATETIME(created_at) < :timestamp "
+                "ORDER BY DATETIME(created_at) ASC Limit 1",
+                {"timestamp": old_date},
+            ).fetchone()
+        except sqlite3.DatabaseError as e:
+            print(f"get oldest lumberjack message error{e}")
+        return LJMessage(message[0], message[1], message[2],) if message else None
 
-        return lj_messages
+    def get_lumberjack_message(self, channel_id: int, message_id: int) -> LJMessage:
+        old_date = datetime.utcnow() - timedelta(days=31)
+        message = None
+        try:
+            message = self.conn.execute(
+                "SELECT * FROM lumberjack_messages WHERE DATETIME(created_at)  < :timestamp AND "
+                "channel_id=:channel_id AND message_id=:message_id",
+                {
+                    "timestamp": old_date,
+                    "channel_id": channel_id,
+                    "message_id": message_id,
+                },
+            ).fetchone()
+        except sqlite3.DatabaseError as e:
+            print(f"Get Lumberjack Messages error: {e}")
+        return LJMessage(message[0], message[1], message[2],) if message else None
 
     def delete_lumberjack_messages_from_db(self, message_id: int):
         try:
