@@ -1,6 +1,6 @@
 import logging
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 import discord
@@ -109,9 +109,14 @@ async def on_message_delete(message: discord.Message):
     deleted: List[discord.Message] = []
     if channel:
         try:
-            deleted = await channel.purge(limit=100, check=find_old_messages)
+            deleted = await channel.purge(
+                limit=100,
+                check=find_old_messages,
+                after=(db_message.created_at - timedelta(hours=1)),
+                bulk=True,
+            )
         except Exception as e:
-            print(f"On_message_delete error: {e}")
+            logs.error(e)
     db.delete_lumberjack_messages_from_db(db_message.message_id)
     for message in deleted:
         db.delete_lumberjack_messages_from_db(message.id)
