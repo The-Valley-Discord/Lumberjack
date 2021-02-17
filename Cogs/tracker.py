@@ -1,8 +1,8 @@
 import logging
+import typing
 from datetime import datetime, timedelta
 
 import discord
-import typing
 from discord.ext import commands
 from discord.ext.commands import Context
 
@@ -25,7 +25,7 @@ class Tracker(commands.Cog):
         ctx: Context,
         user: discord.Member,
         time: str,
-        channel: typing.Union[discord.TextChannel, str] = "here"
+        channel: typing.Union[discord.TextChannel, str] = "here",
     ):
         if channel.lower() == "here":
             channel = ctx.channel

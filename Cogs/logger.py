@@ -82,8 +82,8 @@ class Logger(commands.Cog):
             return
         try:
             msg: DBMessage = self.db.get_msg_by_id(payload.message_id)
-        except ValueError as e:
-            self.logs.debug(f"on_raw_message_delete: {payload.message_id} {e}")
+        except ValueError:
+            pass
         else:
             author: discord.User = channel.guild.get_member(msg.author.id)
             if author is None:
@@ -143,8 +143,8 @@ class Logger(commands.Cog):
         for message_id in message_ids:
             try:
                 message: DBMessage = self.db.get_msg_by_id(message_id)
-            except ValueError as e:
-                self.logs.debug(f"on_raw_bulk_message_delete: {message_id} {e} ")
+            except ValueError:
+                pass
             else:
                 if self.bot.user.id == message.author.id:
                     pass
@@ -192,8 +192,7 @@ class Logger(commands.Cog):
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         try:
             before = self.db.get_msg_by_id(payload.message_id)
-        except ValueError as e:
-            self.logs.debug(f"on_raw_message_edit: {payload.message_id} {e} ")
+        except ValueError:
             return
         try:
             channel = self.bot.get_channel(payload.channel_id)

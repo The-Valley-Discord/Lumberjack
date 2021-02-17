@@ -42,9 +42,13 @@ bot = commands.Bot(
 
 if __name__ == "__main__":
     with open("schema.sql", "r") as schema_file:
-        db: Database = Database(sqlite3.connect("log.db",
-                                                detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,),
-                                logs, schema_file)
+        db: Database = Database(
+            sqlite3.connect(
+                "log.db", detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+            ),
+            logs,
+            schema_file,
+        )
     bot.add_cog(MemberLog(bot, logs, db))
     bot.add_cog(Tracker(bot, logs, db))
     bot.add_cog(Logger(bot, logs, db))
@@ -90,21 +94,27 @@ async def on_invite_delete(invite: discord.Invite):
     remove_invite(invite)
 
 
+def find_old_messages(m: discord.Message):
+    message = db.get_lumberjack_message(m.channel.id, m.id)
+    return True if message else False
+
+
 @bot.event
 async def on_message_delete(message: discord.Message):
     db.delete_old_db_messages()
-    db_messages: List[LJMessage] = db.get_old_lumberjack_messages()
-    for lj_message in db_messages:
-        channel = bot.get_channel(lj_message.channel_id)
-        if channel:
-            try:
-                lum_message: discord.Message = await channel.fetch_message(
-                    lj_message.message_id
-                )
-                await lum_message.delete()
-            except discord.NotFound:
-                pass
-        db.delete_lumberjack_messages_from_db(lj_message.message_id)
+    db_message: LJMessage = db.get_oldest_lumberjack_message()
+    if not db_message:
+        return
+    channel = bot.get_channel(db_message.channel_id)
+    deleted: List[discord.Message] = []
+    if channel:
+        try:
+            deleted = await channel.purge(limit=100, check=find_old_messages)
+        except Exception as e:
+            print(f"On_message_delete error: {e}")
+    db.delete_lumberjack_messages_from_db(db_message.message_id)
+    for message in deleted:
+        db.delete_lumberjack_messages_from_db(message.id)
 
 
 @bot.command()
