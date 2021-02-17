@@ -91,7 +91,7 @@ class Database:
                 )
 
     def delete_old_db_messages(self):
-        old_date = datetime.utcnow() - timedelta(minutes=1)
+        old_date = datetime.utcnow() - timedelta(days=31)
         try:
             self.conn.execute(
                 "DELETE FROM messages WHERE DATETIME(created_at) < :timestamp",
