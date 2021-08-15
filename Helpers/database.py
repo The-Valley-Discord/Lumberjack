@@ -231,6 +231,31 @@ class Database:
             )
         raise ValueError("User not being tracked.")
 
+    def get_all_expired_trackers(self) -> List[Tracking]:
+        trackers = []
+        try:
+            trackers = self.conn.execute(
+                "SELECT * FROM tracking WHERE DATETIME(endtime) < :time",
+                {"time": datetime.utcnow()},
+            ).fetchall()
+        except sqlite3.DatabaseError:
+            pass
+        finally:
+            objectified_trackers = []
+            for tracker in trackers:
+                objectified_trackers.append(
+                    Tracking(
+                        tracker[0],
+                        tracker[1],
+                        tracker[2],
+                        tracker[3],
+                        tracker[4],
+                        tracker[5],
+                        tracker[6],
+                    )
+                )
+                return objectified_trackers
+
     def add_tracker(self, new_tracker: Tracking):
         tracker = (
             new_tracker.user_id,

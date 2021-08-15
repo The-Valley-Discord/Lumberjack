@@ -3,7 +3,7 @@ import typing
 from datetime import datetime, timedelta
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.ext.commands import Context
 
 from Helpers.database import Database
@@ -17,6 +17,7 @@ class Tracker(commands.Cog):
         self.logs = logs
         self.db = db
         self._last_member = None
+        self.clear_expired_trackers.start()
 
     @commands.command()
     @commands.check_any(has_permissions())
@@ -109,44 +110,52 @@ class Tracker(commands.Cog):
                 f"{attachment.proxy_url}" for attachment in message.attachments
             ]
             channel = self.bot.get_channel(tracker.channel_id)
-            if tracker.end_time < datetime.utcnow():
-                self.db.remove_tracker(message.guild.id, message.author.id)
-                embed = discord.Embed(
-                    description=f"""Tracker on {tracker.username} has expired""",
-                    color=0xFFF1D7,
+            try:
+                message_split = message_splitter(message.clean_content, 1900)
+            except ValueError:
+                message_split = ["`blank`"]
+            embed = discord.Embed(
+                description=f"**[Jump URL]({message.jump_url})**\n{message_split[0]}",
+                color=0xFFF1D7,
+            )
+            embed.set_footer(
+                text=f"{tracker.username}\t({tracker.user_id})\nMessage sent",
+                icon_url=f"{message.author.avatar_url}",
+            )
+            embed.set_author(name=f"#{message.channel.name}")
+            embed.timestamp = datetime.utcnow()
+            if len(message.clean_content) > 1900:
+                embed.add_field(name=f"Continued", value=f"{message_split[1]}")
+            if len(attachments) > 0:
+                attachments_str = " ".join(attachments)
+                embed.add_field(
+                    name=f"**Attachments**", value=f"{attachments_str}", inline=False,
                 )
-                embed.set_author(name="Tracker Expired")
-                embed.timestamp = datetime.utcnow()
-                gld: DBGuild = self.db.get_log_by_id(message.channel.guild.id)
-                logs: discord.TextChannel = self.bot.get_channel(gld.lj_id)
+                embed.set_image(url=attachments[0])
+            await channel.send(embed=embed)
+
+    @tasks.loop(seconds=0.5)
+    async def clear_expired_trackers(self):
+        trackers = self.db.get_all_expired_trackers()
+        for tracker in trackers:
+            self.db.remove_tracker(tracker.guild_id, tracker.user_id)
+            embed = discord.Embed(
+                description=f"""Tracker on {tracker.username} has expired""",
+                color=0xFFF1D7,
+            )
+            embed.set_author(name="Tracker Expired")
+            embed.timestamp = datetime.utcnow()
+            gld: DBGuild = self.db.get_log_by_id(tracker.guild_id)
+            logs: discord.TextChannel = self.bot.get_channel(gld.lj_id)
+            channel: discord.TextChannel = self.bot.get_channel(tracker.channel_id)
+            try:
                 await logs.send(embed=embed)
+            except discord.HTTPException or discord.Forbidden:
+                pass
+            try:
                 await channel.send(embed=embed)
-            else:
-                try:
-                    message_split = message_splitter(message.clean_content, 1900)
-                except ValueError:
-                    message_split = ["`blank`"]
-                embed = discord.Embed(
-                    description=f"**[Jump URL]({message.jump_url})**\n{message_split[0]}",
-                    color=0xFFF1D7,
-                )
-                embed.set_footer(
-                    text=f"{tracker.username}\t({tracker.user_id})\nMessage sent",
-                    icon_url=f"{message.author.avatar_url}",
-                )
-                embed.set_author(name=f"#{message.channel.name}")
-                embed.timestamp = datetime.utcnow()
-                if len(message.clean_content) > 1900:
-                    embed.add_field(name=f"Continued", value=f"{message_split[1]}")
-                if len(attachments) > 0:
-                    attachments_str = " ".join(attachments)
-                    embed.add_field(
-                        name=f"**Attachments**",
-                        value=f"{attachments_str}",
-                        inline=False,
-                    )
-                    embed.set_image(url=attachments[0])
-                await channel.send(embed=embed)
+            except discord.HTTPException or discord.Forbidden:
+                pass
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
