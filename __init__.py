@@ -1,12 +1,12 @@
 import logging
 import sqlite3
-from datetime import datetime, timedelta
-from typing import List
+from datetime import datetime
 
 import discord
 from discord.ext import commands
 from discord.ext.commands.context import Context
 
+from Cogs.cleanup import Cleanup
 from Cogs.logger import Logger
 from Cogs.member_log import MemberLog
 from Cogs.tracker import Tracker
@@ -19,7 +19,6 @@ from Helpers.helpers import (
     remove_all_guild_invites,
     get_invite,
 )
-from Helpers.models import LJMessage
 
 logs = logging.getLogger("Lumberjack")
 logs.setLevel(logging.DEBUG)
@@ -33,7 +32,7 @@ intents = discord.Intents.default()
 intents.members = True
 
 bot = commands.Bot(
-    command_prefix="lum.",
+    command_prefix="bum.",
     intents=intents,
     activity=discord.Activity(
         type=discord.ActivityType.watching, name="with ten thousand eyes."
@@ -52,6 +51,7 @@ if __name__ == "__main__":
     bot.add_cog(MemberLog(bot, logs, db))
     bot.add_cog(Tracker(bot, logs, db))
     bot.add_cog(Logger(bot, logs, db))
+    bot.add_cog(Cleanup(bot, logs, db))
     db.add_all_guilds(bot)
     logs.info(f"Bot was started at: {datetime.utcnow()}")
 
@@ -92,34 +92,6 @@ async def on_invite_delete(invite: discord.Invite):
         embed.timestamp = datetime.utcnow()
         db.add_lumberjack_message(await log.send(embed=embed))
     remove_invite(invite)
-
-
-def find_old_messages(m: discord.Message):
-    message = db.get_lumberjack_message(m.channel.id, m.id)
-    return True if message else False
-
-
-@bot.event
-async def on_message_delete(message: discord.Message):
-    db.delete_old_db_messages()
-    db_message: LJMessage = db.get_oldest_lumberjack_message()
-    if not db_message:
-        return
-    channel = bot.get_channel(db_message.channel_id)
-    deleted: List[discord.Message] = []
-    if channel:
-        try:
-            deleted = await channel.purge(
-                limit=100,
-                check=find_old_messages,
-                after=(db_message.created_at - timedelta(hours=1)),
-                bulk=True,
-            )
-        except Exception as e:
-            logs.error(e)
-    db.delete_lumberjack_messages_from_db(db_message.message_id)
-    for message in deleted:
-        db.delete_lumberjack_messages_from_db(message.id)
 
 
 @bot.command()

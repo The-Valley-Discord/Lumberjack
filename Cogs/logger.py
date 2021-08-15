@@ -200,50 +200,49 @@ class Logger(commands.Cog):
         except discord.HTTPException or ValueError as e:
             self.logs.error(f"Error in on_raw_message_edit because: {e}")
             return
-        if before.guild.edit == 0:
+        if not before.guild.edit:
             return
-        else:
-            author: discord.Member = channel.guild.get_member(before.author.id)
-            polyphony_role: typing.Union[int, discord.Role] = 0
-            if channel.guild.id == 539925898128785460:
-                try:
-                    polyphony_role = self.bot.get_guild(539925898128785460).get_role(
-                        732962687360827472
-                    )
-                except discord.HTTPException as e:
-                    self.logs.error(
-                        f"Error fetching polyphony role in on_raw_message_edit because: {e}"
-                    )
-            if "content" not in payload.data:
-                payload.data["content"] = ""
-            if before.clean_content == payload.data["content"]:
-                pass
-            elif isinstance(author, discord.Member) and (
-                author.bot and polyphony_role not in author.roles
-            ):
-                pass
-            else:
-                embed = discord.Embed(
-                    title=f"**Message edited in #{channel}**",
-                    description=(
-                        f"**Author:** <@!{author.id}>\n"
-                        f"**Channel:** <#{payload.channel_id}> ({payload.channel_id})\n"
-                        f"**Message ID:** {payload.message_id}\n"
-                        f"**[Jump Url](https://discordapp.com/channels/"
-                        f"{channel.guild.id}/{payload.channel_id}/{payload.message_id})**"
-                    ),
-                    color=0xFFC704,
+        author: discord.Member = channel.guild.get_member(before.author.id)
+        polyphony_role: typing.Union[int, discord.Role] = 0
+        if channel.guild.id == 539925898128785460:
+            try:
+                polyphony_role = self.bot.get_guild(539925898128785460).get_role(
+                    732962687360827472
                 )
-                embed.set_author(
-                    name=f"{author.name}#{author.discriminator} ({author.id})"
+            except discord.HTTPException as e:
+                self.logs.error(
+                    f"Error fetching polyphony role in on_raw_message_edit because: {e}"
                 )
-                embed = field_message_splitter(embed, before.clean_content, "Before")
-                embed = field_message_splitter(embed, payload.data["content"], "After")
-                embed.set_thumbnail(url=author.avatar_url)
-                embed.timestamp = datetime.utcnow()
-                if logs:
-                    try:
-                        self.db.add_lumberjack_message(await logs.send(embed=embed))
-                    except discord.HTTPException as e:
-                        self.logs.error(f"Error sending edit log: {e}")
-                self.db.update_msg(payload.message_id, payload.data["content"])
+        if "content" not in payload.data:
+            return
+        if (
+            before.clean_content == payload.data["content"]
+            or not payload.data["content"]
+        ):
+            return
+        if isinstance(author, discord.Member) and (
+            author.bot and polyphony_role not in author.roles
+        ):
+            return
+        embed = discord.Embed(
+            title=f"**Message edited in #{channel}**",
+            description=(
+                f"**Author:** <@!{author.id}>\n"
+                f"**Channel:** <#{payload.channel_id}> ({payload.channel_id})\n"
+                f"**Message ID:** {payload.message_id}\n"
+                f"**[Jump Url](https://discordapp.com/channels/"
+                f"{channel.guild.id}/{payload.channel_id}/{payload.message_id})**"
+            ),
+            color=0xFFC704,
+        )
+        embed.set_author(name=f"{author.name}#{author.discriminator} ({author.id})")
+        embed = field_message_splitter(embed, before.clean_content, "Before")
+        embed = field_message_splitter(embed, payload.data["content"], "After")
+        embed.set_thumbnail(url=author.avatar_url)
+        embed.timestamp = datetime.utcnow()
+        if logs:
+            try:
+                self.db.add_lumberjack_message(await logs.send(embed=embed))
+            except discord.HTTPException as e:
+                self.logs.error(f"Error sending edit log: {e}")
+        self.db.update_msg(payload.message_id, payload.data["content"])
