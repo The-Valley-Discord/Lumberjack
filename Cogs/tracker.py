@@ -148,14 +148,16 @@ class Tracker(commands.Cog):
             gld: DBGuild = self.db.get_log_by_id(tracker.guild_id)
             logs: discord.TextChannel = self.bot.get_channel(gld.lj_id)
             channel: discord.TextChannel = self.bot.get_channel(tracker.channel_id)
-            try:
-                await logs.send(embed=embed)
-            except discord.HTTPException or discord.Forbidden:
-                pass
-            try:
-                await channel.send(embed=embed)
-            except discord.HTTPException or discord.Forbidden:
-                pass
+            if logs:
+                try:
+                    await logs.send(embed=embed)
+                except discord.HTTPException or discord.Forbidden:
+                    pass
+            if channel:
+                try:
+                    await channel.send(embed=embed)
+                except discord.HTTPException or discord.Forbidden:
+                    pass
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):

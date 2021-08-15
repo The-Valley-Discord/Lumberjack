@@ -254,7 +254,7 @@ class Database:
                         tracker[6],
                     )
                 )
-                return objectified_trackers
+            return objectified_trackers
 
     def add_tracker(self, new_tracker: Tracking):
         tracker = (
