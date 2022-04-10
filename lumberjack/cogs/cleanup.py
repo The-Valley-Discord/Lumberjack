@@ -1,20 +1,18 @@
-import logging
+from typing import Optional
 
 import discord
-from discord.ext import commands, tasks
+from discord.ext import tasks
 
-from Helpers.database import Database
-from Helpers.models import LJMessage
+from lumberjack import Lumberjack
+from lumberjack.helpers.models import LJMessage
 
 
-class Cleanup(commands.Cog):
-    def __init__(self, bot: discord.Client, logs: logging, db: Database):
-        self.bot: discord.Client = bot
-        self.logs: logging = logs
-        self.db: Database = db
+class Cleanup(Lumberjack.Cog):
+    def __init__(self, *args):
         self.cleanup_old_log_messages.start()
+        super().__init__(*args)
 
-    @tasks.loop(seconds=0.5)
+    @tasks.loop(minutes=1)
     async def cleanup_old_log_messages(self):
         self.db.delete_old_db_messages()
         db_message: LJMessage = self.db.get_oldest_lumberjack_message()
@@ -22,12 +20,18 @@ class Cleanup(commands.Cog):
             return
         channel: discord.TextChannel = self.bot.get_channel(db_message.channel_id)
         if channel:
-            message: discord.Message = await channel.fetch_message(
-                db_message.message_id
-            )
+            message: Optional[discord.Message] = None
+            try:
+                message = await channel.fetch_message(db_message.message_id)
+            except discord.Forbidden or discord.NotFound:
+                pass
             if message:
                 try:
                     await message.delete()
                 except discord.Forbidden or discord.NotFound:
                     pass
         self.db.delete_lumberjack_messages_from_db(db_message.message_id)
+
+
+async def setup(bot):
+    await bot.add_cog(Cleanup(bot))

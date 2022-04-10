@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "Lumberjack"
+version = "2.0.0"
+description = "Lumberjack is a basic logging bot."
+authors = ["Runtime-Ali <57050083+Runtime-Ali@users.noreply.github.com>"]
+license = "AGPL-3.0"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+"discord.py" = { git = "https://github.com/Rapptz/discord.py", branch = "master"}
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.3"
+pylint = "^2.7.4"
+black = "^21.5b1"
+
+[tool.poetry.scripts]
+lumberjack = "Lumberjack.__main__:main"
+
+[build-system]
+requires = ["poetry-core>=1.1.13"]
+build-backend = "poetry.core.masonry.api"

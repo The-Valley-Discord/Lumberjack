@@ -23,8 +23,7 @@ def add_invite(invite: discord.Invite):
 
 def get_invite(invite_id: str) -> discord.Invite:
     """
-
-    :param invite_id: the invites id as a string
+    :param: invite_id: the invite's id as a string
     :return: the invite that matches the id provided.
     """
     try:

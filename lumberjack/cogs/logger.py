@@ -1,22 +1,20 @@
 import logging
 import typing
-from datetime import datetime
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from Helpers.database import Database
-from Helpers.helpers import has_permissions, format_datetime, field_message_splitter
-from Helpers.models import DBGuild, DBMessage
+from lumberjack.helpers.helpers import (
+    has_permissions,
+    format_datetime,
+    field_message_splitter,
+)
+from lumberjack.helpers.models import DBGuild, DBMessage
+from lumberjack.cusomizations import Lumberjack
 
 
-class Logger(commands.Cog):
-    def __init__(self, bot: discord.Client, logs: logging, db: Database):
-        self.bot: discord.Client = bot
-        self.logs: logging = logs
-        self.db: Database = db
-        self._last_member = None
+class Logger(Lumberjack.Cog):
 
     @commands.command()
     @commands.check_any(has_permissions())
@@ -40,7 +38,7 @@ class Logger(commands.Cog):
         if isinstance(error, commands.CommandInvokeError):
             await ctx.send(
                 "Incorrect log type. Please use one of the following. Join, Leave, "
-                "Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, Stats or LJLog"
+                "Delete, Bulk_Delete, Edit, Username, Nickname, Avatar or LJLog"
             )
         if isinstance(error, commands.BadArgument):
             await ctx.send(
@@ -60,7 +58,7 @@ class Logger(commands.Cog):
         if isinstance(error, commands.CommandInvokeError):
             await ctx.send(
                 "Incorrect log type. Please use one of the following. Join, Leave, "
-                "Delete, Bulk_Delete, Edit, Username, Nickname, Avatar, Stats or LJLog"
+                "Delete, Bulk_Delete, Edit, Username, Nickname, Avatar or LJLog"
             )
         elif not isinstance(error, commands.CheckAnyFailure):
             await ctx.send("Format is `lum.clear <log type>")
@@ -85,7 +83,9 @@ class Logger(commands.Cog):
         except ValueError:
             pass
         else:
-            author: discord.User = channel.guild.get_member(msg.author.id)
+            author: typing.Optional[
+                typing.Union[discord.Member, discord.User]
+            ] = channel.guild.get_member(msg.author.id)
             if author is None:
                 author = self.bot.get_user(msg.author.id)
             polyphony_role: typing.Union[int, discord.Role] = 0
@@ -126,9 +126,9 @@ class Logger(commands.Cog):
                 embed.set_author(
                     name=f"{author.name}#{author.discriminator} ({author.id})"
                 )
-                embed.set_thumbnail(url=author.avatar_url)
+                embed.set_thumbnail(url=author.avatar.url)
                 embed.set_footer(text=f"")
-                embed.timestamp = datetime.utcnow()
+                embed.timestamp = discord.utils.utcnow()
                 try:
                     self.db.add_lumberjack_message(await logs.send(embed=embed))
                 except discord.HTTPException as e:
@@ -168,7 +168,7 @@ class Logger(commands.Cog):
                     ),
                     color=0xFF0080,
                 )
-                embed.timestamp = datetime.utcnow()
+                embed.timestamp = discord.utils.utcnow()
                 with open("./log.txt", "w", encoding="utf-8") as file:
                     for message in messages:
                         file.writelines(
@@ -181,7 +181,7 @@ class Logger(commands.Cog):
                             embed=embed,
                             file=discord.File(
                                 "./log.txt",
-                                filename=f"{datetime.utcnow().strftime(format_datetime)}.txt",
+                                filename=f"{discord.utils.utcnow().strftime(format_datetime)}.txt",
                             ),
                         )
                     )
@@ -238,11 +238,15 @@ class Logger(commands.Cog):
         embed.set_author(name=f"{author.name}#{author.discriminator} ({author.id})")
         embed = field_message_splitter(embed, before.clean_content, "Before")
         embed = field_message_splitter(embed, payload.data["content"], "After")
-        embed.set_thumbnail(url=author.avatar_url)
-        embed.timestamp = datetime.utcnow()
+        embed.set_thumbnail(url=author.avatar.url)
+        embed.timestamp = discord.utils.utcnow()
         if logs:
             try:
                 self.db.add_lumberjack_message(await logs.send(embed=embed))
             except discord.HTTPException as e:
                 self.logs.error(f"Error sending edit log: {e}")
         self.db.update_msg(payload.message_id, payload.data["content"])
+
+
+async def setup(bot):
+    await bot.add_cog(Logger(bot))

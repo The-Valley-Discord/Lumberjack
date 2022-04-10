@@ -1,23 +1,23 @@
-import logging
 import typing
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import discord
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
 
-from Helpers.database import Database
-from Helpers.helpers import message_splitter, has_permissions, field_message_splitter
-from Helpers.models import Tracking, DBGuild, DBMessage
+from lumberjack.helpers.helpers import (
+    message_splitter,
+    has_permissions,
+    field_message_splitter,
+)
+from lumberjack.helpers.models import Tracking, DBGuild, DBMessage
+from lumberjack.cusomizations import Lumberjack
 
 
-class Tracker(commands.Cog):
-    def __init__(self, bot: discord.Client, logs: logging, db: Database):
-        self.bot = bot
-        self.logs = logs
-        self.db = db
-        self._last_member = None
+class Tracker(Lumberjack.Cog):
+    def __init__(self, *args):
         self.clear_expired_trackers.start()
+        super().__init__(*args)
 
     @commands.command()
     @commands.check_any(has_permissions())
@@ -28,9 +28,9 @@ class Tracker(commands.Cog):
         time: str,
         channel: typing.Union[discord.TextChannel, str] = "here",
     ):
-        if channel.lower() == "here":
+        if isinstance(channel, str) and  channel.lower() == "here":
             channel = ctx.channel
-        tracking_time: datetime = datetime.utcnow()
+        tracking_time: datetime = datetime.now(timezone.utc)
         if time[-1].lower() == "d":
             tracking_time += timedelta(days=int(time[:-1]))
         elif time[-1].lower() == "h":
@@ -107,7 +107,7 @@ class Tracker(commands.Cog):
             pass
         else:
             attachments = [
-                f"{attachment.proxy_url}" for attachment in message.attachments
+                attachment.proxy_url for attachment in message.attachments
             ]
             channel = self.bot.get_channel(tracker.channel_id)
             try:
@@ -120,16 +120,18 @@ class Tracker(commands.Cog):
             )
             embed.set_footer(
                 text=f"{tracker.username}\t({tracker.user_id})\nMessage sent",
-                icon_url=f"{message.author.avatar_url}",
+                icon_url=f"{message.author.avatar.url}",
             )
             embed.set_author(name=f"#{message.channel.name}")
-            embed.timestamp = datetime.utcnow()
+            embed.timestamp = discord.utils.utcnow()
             if len(message.clean_content) > 1900:
                 embed.add_field(name=f"Continued", value=f"{message_split[1]}")
             if len(attachments) > 0:
-                attachments_str = " ".join(attachments)
+                attachments_str = " \n".join(attachments)
                 embed.add_field(
-                    name=f"**Attachments**", value=f"{attachments_str}", inline=False,
+                    name=f"**Attachments**",
+                    value=f"{attachments_str}",
+                    inline=False,
                 )
                 embed.set_image(url=attachments[0])
             await channel.send(embed=embed)
@@ -144,7 +146,7 @@ class Tracker(commands.Cog):
                 color=0xFFF1D7,
             )
             embed.set_author(name="Tracker Expired")
-            embed.timestamp = datetime.utcnow()
+            embed.timestamp = discord.utils.utcnow()
             gld: DBGuild = self.db.get_log_by_id(tracker.guild_id)
             logs: discord.TextChannel = self.bot.get_channel(gld.lj_id)
             channel: discord.TextChannel = self.bot.get_channel(tracker.channel_id)
@@ -182,9 +184,9 @@ class Tracker(commands.Cog):
             embed.set_author(name=f"#{channel.name}")
             embed.set_footer(
                 text=f"{tracker.username}\t({tracker.user_id})\nMessage sent",
-                icon_url=author.avatar_url,
+                icon_url=author.avatar.url,
             )
-            embed.timestamp = datetime.utcnow()
+            embed.timestamp = discord.utils.utcnow()
             embed = field_message_splitter(embed, before.clean_content, "Before")
             embed = field_message_splitter(embed, payload.data["content"], "After")
             await channel.send(embed=embed)
@@ -213,9 +215,9 @@ class Tracker(commands.Cog):
                 embed.set_author(name="Joined Voice Channel")
                 embed.set_footer(
                     text=f"{tracker.username}\n({member.id}) ",
-                    icon_url=member.avatar_url,
+                    icon_url=member.avatar.url,
                 )
-                embed.timestamp = datetime.utcnow()
+                embed.timestamp = discord.utils.utcnow()
                 await channel.send(embed=embed)
             elif after.channel is None:
                 embed = discord.Embed(
@@ -224,9 +226,9 @@ class Tracker(commands.Cog):
                 embed.set_author(name="Left Voice Channel")
                 embed.set_footer(
                     text=f"{tracker.username}\n({member.id})",
-                    icon_url=member.avatar_url,
+                    icon_url=member.avatar.url,
                 )
-                embed.timestamp = datetime.utcnow()
+                embed.timestamp = discord.utils.utcnow()
                 await channel.send(embed=embed)
             elif after.channel != before.channel:
                 embed = discord.Embed(
@@ -237,9 +239,9 @@ class Tracker(commands.Cog):
                 embed.set_author(name="Moved Voice Channels")
                 embed.set_footer(
                     text=f"{tracker.username}\n({member.id})",
-                    icon_url=member.avatar_url,
+                    icon_url=member.avatar.url,
                 )
-                embed.timestamp = datetime.utcnow()
+                embed.timestamp = discord.utils.utcnow()
                 await channel.send(embed=embed)
             else:
                 await channel.send("There was an error on VC log")
@@ -263,7 +265,7 @@ class Tracker(commands.Cog):
                 )
                 embed.set_author(name=f"{after.name}#{after.discriminator}")
                 embed.set_footer(text=f"{after.id}")
-                embed.timestamp = datetime.utcnow()
+                embed.timestamp = discord.utils.utcnow()
                 await channel.send(embed=embed)
 
     @commands.Cog.listener()
@@ -290,12 +292,16 @@ class Tracker(commands.Cog):
                     )
                     embed.set_author(name=f"{after.name}#{after.discriminator}")
                     embed.set_footer(text=f"{after.id}")
-                    embed.timestamp = datetime.utcnow()
+                    embed.timestamp = discord.utils.utcnow()
                     await channel.send(embed=embed)
                 if before.avatar != after.avatar:
                     embed = discord.Embed(description=f"New avatar", color=0x8000FF)
                     embed.set_author(name=f"{after.name}#{after.discriminator}")
                     embed.set_footer(text=f"{after.id}")
-                    embed.set_thumbnail(url=after.avatar_url)
-                    embed.timestamp = datetime.utcnow()
+                    embed.set_thumbnail(url=after.avatar.url)
+                    embed.timestamp = discord.utils.utcnow()
                     await channel.send(embed=embed)
+
+
+async def setup(bot):
+    await bot.add_cog(Tracker(bot))
