@@ -85,7 +85,7 @@ async def on_invite_delete(invite: discord.Invite):
             description=f"Invite Id: {invite.id}\n" f"Created By: {invite.inviter}",
             color=0x009DFF,
         )
-        embed.set_author(name="Invite Deleted", icon_url=bot.user.avatar.url)
+        embed.set_author(name="Invite Deleted", icon_url=bot.user.display_avatar.url)
         embed.timestamp = discord.utils.utcnow()
         db.add_lumberjack_message(await log.send(embed=embed))
     remove_invite(invite)
@@ -96,7 +96,7 @@ async def ping(ctx: Context):
     embed: discord.Embed = discord.Embed(
         title="**Ping**", description=f"Pong! {round(bot.latency * 1000)}ms"
     )
-    embed.set_author(name=f"{bot.user.name}", icon_url=bot.user.avatar.url)
+    embed.set_author(name=f"{bot.user.name}", icon_url=bot.user.display_avatar.url)
     await ctx.send(embed=embed)
 
 

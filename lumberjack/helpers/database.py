@@ -41,7 +41,7 @@ class Database:
             message.guild.id,
             message.clean_content,
             message.created_at,
-            f"{message.author.avatar.url}",
+            f"{message.author.display_avatar.url}",
             attachment_bool,
         )
         sql = """INSERT INTO messages (id,author,authorname,authordisplayname,channelid,channelname,guildid,

@@ -126,7 +126,7 @@ class Logger(Lumberjack.Cog):
                 embed.set_author(
                     name=f"{author.name}#{author.discriminator} ({author.id})"
                 )
-                embed.set_thumbnail(url=author.avatar.url)
+                embed.set_thumbnail(url=author.display_avatar)
                 embed.set_footer(text=f"")
                 embed.timestamp = discord.utils.utcnow()
                 try:
@@ -238,7 +238,7 @@ class Logger(Lumberjack.Cog):
         embed.set_author(name=f"{author.name}#{author.discriminator} ({author.id})")
         embed = field_message_splitter(embed, before.clean_content, "Before")
         embed = field_message_splitter(embed, payload.data["content"], "After")
-        embed.set_thumbnail(url=author.avatar.url)
+        embed.set_thumbnail(url=author.display_avatar.url)
         embed.timestamp = discord.utils.utcnow()
         if logs:
             try:

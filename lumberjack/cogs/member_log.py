@@ -52,7 +52,7 @@ class MemberLog(Lumberjack.Cog):
                     inline=False,
                 )
             embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})")
-            embed.set_thumbnail(url=member.avatar.url)
+            embed.set_thumbnail(url=member.display_avatar.url)
             embed.set_footer(text=f"Total Members: {member.guild.member_count}")
             embed.timestamp = discord.utils.utcnow()
             await logs.send(embed=embed)
@@ -77,7 +77,7 @@ class MemberLog(Lumberjack.Cog):
                 color=0xD90000,
             )
             embed.set_author(name=f"{member.name}#{member.discriminator} ({member.id})")
-            embed.set_thumbnail(url=member.avatar.url)
+            embed.set_thumbnail(url=member.display_avatar.url)
             embed.set_footer(text=f"Total Members: {member.guild.member_count}")
             embed.timestamp = discord.utils.utcnow()
             roles = [f"<@&{role.id}>" for role in member.roles[1:]]
@@ -111,7 +111,7 @@ class MemberLog(Lumberjack.Cog):
                 color=0x22FFC2,
             )
             embed.set_author(name=f"{after.name}#{after.discriminator} ({after.id})")
-            embed.set_thumbnail(url=after.avatar.url)
+            embed.set_thumbnail(url=after.display_avatar.url)
             embed.set_footer(text=f"")
             embed.timestamp = discord.utils.utcnow()
             self.db.add_lumberjack_message(await logs.send(embed=embed))
@@ -144,7 +144,7 @@ class MemberLog(Lumberjack.Cog):
                         embed.set_author(
                             name=f"{after.name}#{after.discriminator} ({after.id})"
                         )
-                        embed.set_thumbnail(url=after.avatar.url)
+                        embed.set_thumbnail(url=after.display_avatar.url)
                         embed.set_footer(text=f"")
                         embed.timestamp = discord.utils.utcnow()
                         self.db.add_lumberjack_message(await logs.send(embed=embed))
@@ -164,9 +164,9 @@ class MemberLog(Lumberjack.Cog):
                         embed.set_author(
                             name=f"{after.name}#{after.discriminator} ({after.id})"
                         )
-                        embed.set_thumbnail(url=before.avatar.url)
+                        embed.set_thumbnail(url=before.display_avatar.url)
                         embed.set_footer(text=f"")
-                        embed.set_image(url=str(after.avatar.with_size(128).url))
+                        embed.set_image(url=str(after.display_avatar.with_size(128).url))
                         embed.timestamp = discord.utils.utcnow()
                         self.db.add_lumberjack_message(await logs.send(embed=embed))
 

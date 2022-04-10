@@ -120,7 +120,7 @@ class Tracker(Lumberjack.Cog):
             )
             embed.set_footer(
                 text=f"{tracker.username}\t({tracker.user_id})\nMessage sent",
-                icon_url=f"{message.author.avatar.url}",
+                icon_url=f"{message.author.display_avatar.url}",
             )
             embed.set_author(name=f"#{message.channel.name}")
             embed.timestamp = discord.utils.utcnow()
@@ -184,7 +184,7 @@ class Tracker(Lumberjack.Cog):
             embed.set_author(name=f"#{channel.name}")
             embed.set_footer(
                 text=f"{tracker.username}\t({tracker.user_id})\nMessage sent",
-                icon_url=author.avatar.url,
+                icon_url=author.display_avatar.url,
             )
             embed.timestamp = discord.utils.utcnow()
             embed = field_message_splitter(embed, before.clean_content, "Before")
@@ -215,7 +215,7 @@ class Tracker(Lumberjack.Cog):
                 embed.set_author(name="Joined Voice Channel")
                 embed.set_footer(
                     text=f"{tracker.username}\n({member.id}) ",
-                    icon_url=member.avatar.url,
+                    icon_url=member.display_avatar.url,
                 )
                 embed.timestamp = discord.utils.utcnow()
                 await channel.send(embed=embed)
@@ -226,7 +226,7 @@ class Tracker(Lumberjack.Cog):
                 embed.set_author(name="Left Voice Channel")
                 embed.set_footer(
                     text=f"{tracker.username}\n({member.id})",
-                    icon_url=member.avatar.url,
+                    icon_url=member.display_avatar.url,
                 )
                 embed.timestamp = discord.utils.utcnow()
                 await channel.send(embed=embed)
@@ -239,7 +239,7 @@ class Tracker(Lumberjack.Cog):
                 embed.set_author(name="Moved Voice Channels")
                 embed.set_footer(
                     text=f"{tracker.username}\n({member.id})",
-                    icon_url=member.avatar.url,
+                    icon_url=member.display_avatar.url,
                 )
                 embed.timestamp = discord.utils.utcnow()
                 await channel.send(embed=embed)
@@ -298,7 +298,7 @@ class Tracker(Lumberjack.Cog):
                     embed = discord.Embed(description=f"New avatar", color=0x8000FF)
                     embed.set_author(name=f"{after.name}#{after.discriminator}")
                     embed.set_footer(text=f"{after.id}")
-                    embed.set_thumbnail(url=after.avatar.url)
+                    embed.set_thumbnail(url=after.display_avatar.url)
                     embed.timestamp = discord.utils.utcnow()
                     await channel.send(embed=embed)
 
