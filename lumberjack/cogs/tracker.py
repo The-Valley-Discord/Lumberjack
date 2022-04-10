@@ -28,7 +28,7 @@ class Tracker(Lumberjack.Cog):
         time: str,
         channel: typing.Union[discord.TextChannel, str] = "here",
     ):
-        if isinstance(channel, str) and  channel.lower() == "here":
+        if isinstance(channel, str) and channel.lower() == "here":
             channel = ctx.channel
         tracking_time: datetime = datetime.now(timezone.utc)
         if time[-1].lower() == "d":
@@ -106,9 +106,7 @@ class Tracker(Lumberjack.Cog):
         except ValueError:
             pass
         else:
-            attachments = [
-                attachment.proxy_url for attachment in message.attachments
-            ]
+            attachments = [attachment.proxy_url for attachment in message.attachments]
             channel = self.bot.get_channel(tracker.channel_id)
             try:
                 message_split = message_splitter(message.clean_content, 1900)

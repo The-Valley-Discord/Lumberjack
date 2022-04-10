@@ -30,7 +30,6 @@ intents.members = True
 intents.message_content = True
 
 
-
 with open("lumberjack/migrations/schema.sql", "r") as schema_file:
     db: Database = Database(
         sqlite3.connect(

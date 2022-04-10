@@ -15,7 +15,6 @@ from lumberjack.cusomizations import Lumberjack
 
 
 class Logger(Lumberjack.Cog):
-
     @commands.command()
     @commands.check_any(has_permissions())
     async def log(

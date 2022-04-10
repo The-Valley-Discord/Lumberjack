@@ -9,7 +9,6 @@ from lumberjack.cusomizations import Lumberjack
 
 
 class MemberLog(Lumberjack.Cog):
-
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         gld: DBGuild = self.db.get_log_by_id(member.guild.id)
@@ -166,7 +165,9 @@ class MemberLog(Lumberjack.Cog):
                         )
                         embed.set_thumbnail(url=before.display_avatar.url)
                         embed.set_footer(text=f"")
-                        embed.set_image(url=str(after.display_avatar.with_size(128).url))
+                        embed.set_image(
+                            url=str(after.display_avatar.with_size(128).url)
+                        )
                         embed.timestamp = discord.utils.utcnow()
                         self.db.add_lumberjack_message(await logs.send(embed=embed))
 

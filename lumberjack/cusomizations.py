@@ -10,10 +10,10 @@ class Lumberjack(commands.Bot):
         super().__init__(command_prefix=command_prefix, **kwargs)
         self.logs = logging.getLogger("Lumberjack")
         self.initial_extensions = [
-            'lumberjack.cogs.cleanup',
-            'lumberjack.cogs.logger',
-            'lumberjack.cogs.member_log',
-            'lumberjack.cogs.tracker',
+            "lumberjack.cogs.cleanup",
+            "lumberjack.cogs.logger",
+            "lumberjack.cogs.member_log",
+            "lumberjack.cogs.tracker",
         ]
         self.session = None
         self.db: Database = database
