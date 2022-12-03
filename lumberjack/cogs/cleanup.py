@@ -12,7 +12,7 @@ class Cleanup(Lumberjack.Cog):
         self.cleanup_old_log_messages.start()
         super().__init__(*args)
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(seconds=0.2)
     async def cleanup_old_log_messages(self):
         self.db.delete_old_db_messages()
         db_message: LJMessage = self.db.get_oldest_lumberjack_message()

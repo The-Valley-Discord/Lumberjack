@@ -50,8 +50,12 @@ async def add_all_invites(bot: discord.Client):
 
 
 async def add_all_guild_invites(guild: discord.Guild):
-    for invite in await guild.invites():
-        add_invite(invite)
+    try:
+        for invite in await guild.invites():
+            add_invite(invite)
+    except discord.errors.Forbidden:
+        print(f"Failed to get invites for {guild.name} ({guild.id}) because bot was missing manage_guild permission")
+        return
 
 
 async def remove_all_guild_invites(guild: discord.Guild):

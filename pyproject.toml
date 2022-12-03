@@ -7,7 +7,7 @@ license = "AGPL-3.0"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-"discord.py" = { git = "https://github.com/Rapptz/discord.py", branch = "master"}
+"discord.py" = "^2.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.3"

@@ -68,6 +68,7 @@ class Logger(Lumberjack.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
+        
         try:
             gld: DBGuild = self.db.get_log_by_id(payload.guild_id)
             logs: discord.TextChannel = self.bot.get_channel(gld.delete_id)
