@@ -7,8 +7,8 @@ import discord
 from discord.ext import commands
 from mock import AsyncMock
 
-from Cogs.logger import Logger
-from Helpers.database import Database
+from lumberjack.cogs.logger import Logger
+from lumberjack.helpers.database import Database
 
 if __name__ == "__main__":
     unittest.main()

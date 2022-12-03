@@ -1,17 +1,14 @@
+import asyncio
 import logging
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 
 import discord
-from discord.ext import commands
 from discord.ext.commands.context import Context
 
-from Cogs.cleanup import Cleanup
-from Cogs.logger import Logger
-from Cogs.member_log import MemberLog
-from Cogs.tracker import Tracker
-from Helpers.database import Database
-from Helpers.helpers import (
+from lumberjack.cusomizations import Lumberjack
+from lumberjack.helpers.database import Database
+from lumberjack.helpers.helpers import (
     add_invite,
     remove_invite,
     add_all_invites,
@@ -21,44 +18,43 @@ from Helpers.helpers import (
 )
 
 logs = logging.getLogger("Lumberjack")
-logs.setLevel(logging.DEBUG)
-handler = logging.FileHandler(filename="Logs/lj.log", encoding="utf-8", mode="a+")
-handler.setFormatter(
-    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
-)
-logs.addHandler(handler)
 
+logging.basicConfig(format="%(levelname)s %(name)s: %(message)s", level=logging.INFO)
+
+for source in ["discord.gateway", "discord.client"]:
+    logging.getLogger(source).addFilter(
+        lambda row: row.levelno > getattr(logging, "INFO")
+    )
 intents = discord.Intents.default()
 intents.members = True
+intents.message_content = True
 
-bot = commands.Bot(
-    command_prefix="lum.",
+
+with open("lumberjack/migrations/schema.sql", "r") as schema_file:
+    db: Database = Database(
+        sqlite3.connect(
+            "./log.db",
+            detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
+        ),
+        logs,
+        schema_file,
+    )
+
+bot = Lumberjack(
+    command_prefix="lum..",
+    database=db,
     intents=intents,
     activity=discord.Activity(
         type=discord.ActivityType.watching, name="with ten thousand eyes."
     ),
 )
-
-if __name__ == "__main__":
-    with open("schema.sql", "r") as schema_file:
-        db: Database = Database(
-            sqlite3.connect(
-                "log.db", detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
-            ),
-            logs,
-            schema_file,
-        )
-    bot.add_cog(MemberLog(bot, logs, db))
-    bot.add_cog(Tracker(bot, logs, db))
-    bot.add_cog(Logger(bot, logs, db))
-    bot.add_cog(Cleanup(bot, logs, db))
-    db.add_all_guilds(bot)
-    logs.info(f"Bot was started at: {datetime.utcnow()}")
+logs.info(f"Bot was started at: {datetime.now(timezone.utc)}")
 
 
 @bot.event
 async def on_ready():
     print("Bot is ready.")
+    db.add_all_guilds(bot.guilds)
     await add_all_invites(bot)
 
 
@@ -88,8 +84,8 @@ async def on_invite_delete(invite: discord.Invite):
             description=f"Invite Id: {invite.id}\n" f"Created By: {invite.inviter}",
             color=0x009DFF,
         )
-        embed.set_author(name="Invite Deleted", icon_url=bot.user.avatar_url)
-        embed.timestamp = datetime.utcnow()
+        embed.set_author(name="Invite Deleted", icon_url=bot.user.display_avatar.url)
+        embed.timestamp = discord.utils.utcnow()
         db.add_lumberjack_message(await log.send(embed=embed))
     remove_invite(invite)
 
@@ -99,7 +95,7 @@ async def ping(ctx: Context):
     embed: discord.Embed = discord.Embed(
         title="**Ping**", description=f"Pong! {round(bot.latency * 1000)}ms"
     )
-    embed.set_author(name=f"{bot.user.name}", icon_url=bot.user.avatar_url)
+    embed.set_author(name=f"{bot.user.name}", icon_url=bot.user.display_avatar.url)
     await ctx.send(embed=embed)
 
 
@@ -118,5 +114,11 @@ async def _help(ctx: Context):
     )
 
 
-with open("token", "r") as f:
-    bot.run(f.readline().strip())
+async def main():
+    async with bot:
+        with open("./token", "r") as f:
+            await bot.start(f.readline().strip())
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

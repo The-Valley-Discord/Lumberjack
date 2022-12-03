@@ -1,12 +1,18 @@
 import logging
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, TextIO
 
 import discord
-from discord.ext.commands import Bot
 
-from Helpers.models import DBMessage, DBAuthor, DBChannel, DBGuild, Tracking, LJMessage
+from lumberjack.helpers.models import (
+    DBMessage,
+    DBAuthor,
+    DBChannel,
+    DBGuild,
+    Tracking,
+    LJMessage,
+)
 
 
 class Database:
@@ -35,7 +41,7 @@ class Database:
             message.guild.id,
             message.clean_content,
             message.created_at,
-            f"{message.author.avatar_url}",
+            f"{message.author.display_avatar.url}",
             attachment_bool,
         )
         sql = """INSERT INTO messages (id,author,authorname,authordisplayname,channelid,channelname,guildid,
@@ -58,7 +64,14 @@ class Database:
         channel = DBChannel(msg[4], msg[5])
         guild = self.get_log_by_id(msg[6])
         attachments = self.get_att_by_id(msg[0])
-        return DBMessage(msg[0], author, channel, guild, msg[7], attachments,)
+        return DBMessage(
+            msg[0],
+            author,
+            channel,
+            guild,
+            msg[7],
+            attachments,
+        )
 
     def update_msg(self, message_id: int, content: str):
         self.conn.execute(
@@ -91,7 +104,7 @@ class Database:
                 )
 
     def delete_old_db_messages(self):
-        old_date = datetime.utcnow() - timedelta(days=31)
+        old_date = datetime.now(timezone.utc) - timedelta(days=31)
         try:
             self.conn.execute(
                 "DELETE FROM messages WHERE DATETIME(created_at) < :timestamp",
@@ -108,10 +121,11 @@ class Database:
         except sqlite3.Error:
             self.logs.error("Error deleting old messages from database")
 
-    def add_all_guilds(self, bot: Bot):
-        for guild in bot.guilds:
-            gld = self.get_log_by_id(guild.id)
-            if gld is None:
+    def add_all_guilds(self, guilds: List[discord.Guild]):
+        for guild in guilds:
+            try:
+                self.get_log_by_id(guild.id)
+            except ValueError:
                 self.add_guild(guild)
 
     def add_guild(self, guild: discord.Guild):
@@ -236,7 +250,7 @@ class Database:
         try:
             trackers = self.conn.execute(
                 "SELECT * FROM tracking WHERE DATETIME(endtime) < :time",
-                {"time": datetime.utcnow()},
+                {"time": datetime.now(timezone.utc)},
             ).fetchall()
         except sqlite3.DatabaseError:
             pass
@@ -321,7 +335,7 @@ class Database:
             )
 
     def get_oldest_lumberjack_message(self) -> LJMessage:
-        old_date = datetime.utcnow() - timedelta(days=31)
+        old_date = datetime.now(timezone.utc) - timedelta(days=31)
         message = None
         try:
             message = self.conn.execute(
@@ -331,10 +345,18 @@ class Database:
             ).fetchone()
         except sqlite3.DatabaseError as e:
             print(f"get oldest lumberjack message error{e}")
-        return LJMessage(message[0], message[1], message[2],) if message else None
+        return (
+            LJMessage(
+                message[0],
+                message[1],
+                message[2],
+            )
+            if message
+            else None
+        )
 
     def get_lumberjack_message(self, channel_id: int, message_id: int) -> LJMessage:
-        old_date = datetime.utcnow() - timedelta(days=31)
+        old_date = datetime.now(timezone.utc) - timedelta(days=31)
         message = None
         try:
             message = self.conn.execute(
@@ -348,7 +370,15 @@ class Database:
             ).fetchone()
         except sqlite3.DatabaseError as e:
             print(f"Get Lumberjack Messages error: {e}")
-        return LJMessage(message[0], message[1], message[2],) if message else None
+        return (
+            LJMessage(
+                message[0],
+                message[1],
+                message[2],
+            )
+            if message
+            else None
+        )
 
     def delete_lumberjack_messages_from_db(self, message_id: int):
         try:

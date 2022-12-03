@@ -35,7 +35,7 @@ Valid log types are as following.
 6. Username: User updates their username
 7. Nickname: User updates their server nickname
 8. Avatar: User updates their avatar
-9. LJ_Log: Lumberjack Log channel. Currently used only for logging when a Tracker is placed on a member.
+9. LJ_Log: Lumberjack Log channel. Currently, it is only used for logging when a Tracker is placed on a member.
 
 #### Tracking
 

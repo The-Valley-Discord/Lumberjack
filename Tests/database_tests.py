@@ -1,13 +1,13 @@
 import logging
 import sqlite3
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock
 
 import discord
 
-from Helpers.database import Database
-from Helpers.models import DBGuild, DBMessage, Tracking
+from lumberjack.helpers.database import Database
+from lumberjack.helpers.models import DBGuild, DBMessage, Tracking
 
 if __name__ == "__main__":
     unittest.main()
@@ -18,17 +18,17 @@ logs = logging.getLogger("Testing")
 class TestDatabaseMessageMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        with open("../schema.sql", "r") as schema_file:
+        with open("../lumberjack/migrations/schema.sql", "r") as schema_file:
             cls.db = Database(sqlite3.connect(":memory:"), logs, schema_file)
         cls.message = Mock(discord.Message)
         cls.message.id = 1
-        cls.message.created_at = datetime.utcnow()
+        cls.message.created_at = datetime.now(timezone.utc)
         cls.message.clean_content = "Test_Content"
 
         cls.author = Mock(discord.Member)
         cls.author.id = 5
         cls.author.display_name = "Test_User"
-        cls.author.avatar_url = "Test_Avatar_URL"
+        cls.author.avatar.url = "Test_Avatar_URL"
         cls.author.name = "Test_name"
         cls.author.discriminator = "0001"
 
@@ -74,7 +74,7 @@ class TestDatabaseMessageMethods(unittest.TestCase):
     def test_delete_old_db_messages(self):
         message = self.message
         message.id = 3
-        message.created_at = datetime.utcnow() - timedelta(days=35)
+        message.created_at = datetime.now(timezone.utc) - timedelta(days=35)
         self.db.add_message(message)
         self.db.delete_old_db_messages()
 
@@ -87,7 +87,7 @@ class TestSetLogChannel(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         test_log = logging.getLogger()
-        with open("../schema.sql", "r") as schema_file:
+        with open("../lumberjack/migrations/schema.sql", "r") as schema_file:
             cls.db = Database(sqlite3.connect(":memory:"), test_log, schema_file)
         cls.guild = Mock(discord.Guild)
         cls.guild.id = 1
@@ -138,7 +138,7 @@ class TestSetLogChannel(unittest.TestCase):
 class TestTracking(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        with open("../schema.sql", "r") as schema_file:
+        with open("../lumberjack/migrations/schema.sql", "r") as schema_file:
             cls.db = Database(
                 sqlite3.connect(
                     ":memory:",
@@ -149,21 +149,29 @@ class TestTracking(unittest.TestCase):
             )
 
     def test_add_tracker(self):
-        tracker = Tracking(1, "Test_user", 2, 3, datetime.utcnow(), 4, "Test_Mod")
+        tracker = Tracking(
+            1, "Test_user", 2, 3, datetime.now(timezone.utc), 4, "Test_Mod"
+        )
         self.db.add_tracker(tracker)
         retrieved_tracker = self.db.get_tracked_by_id(2, 1)
         self.assertEqual(tracker, retrieved_tracker)
 
     def test_update_tracker(self):
-        tracker = Tracking(1, "Test_user", 2, 3, datetime.utcnow(), 4, "Test_Mod")
+        tracker = Tracking(
+            1, "Test_user", 2, 3, datetime.now(timezone.utc), 4, "Test_Mod"
+        )
         self.db.add_tracker(tracker)
-        tracker2 = Tracking(1, "Test_user", 2, 3, datetime.utcnow(), 4, "New_Test_Mod")
+        tracker2 = Tracking(
+            1, "Test_user", 2, 3, datetime.now(timezone.utc), 4, "New_Test_Mod"
+        )
         self.db.add_tracker(tracker2)
         retrieved_tracker = self.db.get_tracked_by_id(2, 1)
         self.assertEqual(tracker2, retrieved_tracker)
 
     def test_remove_tracker(self):
-        tracker = Tracking(1, "Test_user", 2, 3, datetime.utcnow(), 4, "Test_Mod")
+        tracker = Tracking(
+            1, "Test_user", 2, 3, datetime.now(timezone.utc), 4, "Test_Mod"
+        )
         self.db.add_tracker(tracker)
         self.db.remove_tracker(2, 1)
         with self.assertRaises(Exception) as context:
@@ -174,7 +182,7 @@ class TestTracking(unittest.TestCase):
 class TestLumberjackMessageStorage(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        with open("../schema.sql", "r") as schema_file:
+        with open("../lumberjack/migrations/schema.sql", "r") as schema_file:
             cls.db = Database(
                 sqlite3.connect(
                     ":memory:",
@@ -189,7 +197,7 @@ class TestLumberjackMessageStorage(unittest.TestCase):
         message.id = 5
         message.channel = Mock(discord.TextChannel)
         message.channel.id = 6
-        message.created_at = datetime.utcnow() - timedelta(days=36)
+        message.created_at = datetime.now(timezone.utc) - timedelta(days=36)
         self.db.add_lumberjack_message(message)
         retrieved_message = self.db.get_oldest_lumberjack_message()
         self.assertEqual(5, retrieved_message.message_id)
@@ -201,7 +209,7 @@ class TestLumberjackMessageStorage(unittest.TestCase):
         message.id = 6
         message.channel = Mock(discord.TextChannel)
         message.channel.id = 6
-        message.created_at = datetime.utcnow() - timedelta(days=36)
+        message.created_at = datetime.now(timezone.utc) - timedelta(days=36)
         self.db.add_lumberjack_message(message)
         self.db.delete_lumberjack_messages_from_db(6)
         self.db.delete_lumberjack_messages_from_db(5)

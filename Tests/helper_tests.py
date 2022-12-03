@@ -1,13 +1,13 @@
 import random
 import string
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 import aiounittest
 from mock import AsyncMock, Mock
 
-from Helpers.helpers import *
-from Helpers.models import BetterTimeDelta, BetterDateTime
+from lumberjack.helpers.helpers import *
+from lumberjack.helpers.models import BetterTimeDelta, BetterDateTime
 
 if __name__ == "__main__":
     unittest.main()
@@ -130,5 +130,8 @@ class BetterTimeDeltaTest(unittest.TestCase):
     def test_time_delta_subtraction(self):
         self.assertEqual(
             "5 hours ",
-            str(BetterDateTime.utcnow() - BetterDateTime.from_datetime(datetime.now())),
+            str(
+                BetterDateTime.now(timezone.utc)
+                - BetterDateTime.from_datetime(datetime.now(timezone.utc))
+            ),
         )
